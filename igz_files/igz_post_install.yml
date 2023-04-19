@@ -1,0 +1,123 @@
+---
+- hosts: kube_control_plane
+  tasks:
+    - name: Create external_admin.conf
+      shell: sed 's#server:.*#server:\ https://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:6443#g' /etc/kubernetes/admin.conf  > /etc/kubernetes/external_admin.conf
+      become: yes
+
+    - name: restart kubelet
+      service:
+        name: kubelet
+        state: restarted
+      become: yes
+
+- hosts: k8s_clients:k8s_cluster
+  tasks:
+    - name: "create .kube directory"
+      file:
+        path: "/home/{{ ansible_user }}/.kube"
+        state: directory
+
+    - name: "Copy admin kube config file to node"
+      copy:
+        src: "{{ inventory_dir }}/artifacts/admin.conf"
+        dest: "/home/{{ ansible_user }}/.kube/config"
+        owner: "{{ ansible_user }}"
+        mode: 0400
+
+    - name: Copy kubectl binary to client
+      copy:
+        src: "{{ inventory_dir }}/artifacts/kubectl"
+        dest: "{{ bin_dir }}/kubectl"
+        mode: 0755
+      become: yes
+
+    - name: Install kubectl bash completion
+      shell: "{{ bin_dir }}/kubectl completion bash > /etc/bash_completion.d/kubectl.sh"
+      when: ansible_os_family in ['Debian', 'Ubuntu', 'RedHat']
+      become: yes
+
+    - name: Set kubectl bash completion file permissions
+      file:
+        path: /etc/bash_completion.d/kubectl.sh
+        owner: root
+        group: root
+        mode: 0755
+      when: ansible_os_family in ['Debian', 'Ubuntu', 'RedHat']
+      become: yes
+
+- hosts: k8s_cluster
+  become: true
+  tasks:
+    - name: Copy Kompton facts
+      copy:
+        src: /etc/ansible/facts.d/registry.fact
+        dest: /etc/ansible/facts.d/
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Make sure we pick up all facts passed by Kompton
+      setup:
+        filter: ansible_local
+
+    - name: Create symlink for nerdctl
+      file:
+        src: /usr/local/bin/nerdctl
+        dest: /usr/bin/nerdctl
+        state: link
+
+    - name: Copy nvidia runtime patch for containerd
+      copy:
+        src: config.toml.patch
+        dest: /etc/containerd/
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Patch containerd config to work with nvidia runtime
+      shell:
+        cmd: patch config.toml < config.toml.patch
+        chdir: /etc/containerd/
+      register: patch_result
+      failed_when: patch_result.rc > 1
+
+    - name: Restart containerd service
+      systemd:
+        name: containerd
+        state: restarted 
+
+    - name: Pre-load bootstrap images with nerdctl
+      shell:
+        /usr/local/bin/nerdctl load -i {{ ansible_local.registry.kompton.temp_dir }}/bootstrap_apps.tar.gz
+
+    - name: Configure insecure registries
+      block:
+        - name: Create directory
+          file:
+            path: "/etc/containerd/certs.d/{{ item }}{{ system_fqdn }}:80"
+            state: directory
+          loop:
+            - "datanode-registry.iguazio-platform.app."
+            - "docker-registry.iguazio-platform.app."
+            - "docker-registry.default-tenant.app."
+
+        - name: Create hosts.toml from template
+          template:
+            src: igz_hosts.toml.j2
+            dest: "/etc/containerd/certs.d/{{ item }}{{ system_fqdn }}:80/hosts.toml"
+          loop:
+            - "datanode-registry.iguazio-platform.app."
+            - "docker-registry.iguazio-platform.app."
+            - "docker-registry.default-tenant.app."
+
+- hosts: k8s_clients
+  tasks:
+    - name: Get names of all running Docker containers
+      shell: "{% raw %}docker ps --format '{{.Names}}'{% endraw %}"
+      register: docker_ps_output
+
+    - name: Stop and remove Docker containers (but not upgrade_tool)
+      shell: docker rm -f {{ item }}
+      when: '"upgrade_tool" not in item'
+      with_items: "{{ docker_ps_output.stdout_lines }}"
