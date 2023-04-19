@@ -1,0 +1,34 @@
+# inventory.ini.j2
+[all]
+{% for node in app_nodes %}
+k8s-node{{ loop.index }} ansible_host={{ node.mgmt_ip_address }} user={{ username }} ansible_ssh_pass={{ password }} ansible_become_password={{ password }} ip={{ node.client_ip_address }} {% if loop.index <= 3 %}etcd_member_name=etcd{{ loop.index }} 
+{% endif %}
+{% endfor %}
+
+
+[all:vars]
+supplementary_addresses_in_ssl_keys={{ supplementary_addresses_in_ssl_keys }}
+canal_iface={{ canal_iface if canal_iface else 'eth1' }}
+
+[kube_control_plane]
+{% for node in app_nodes[:3] %}
+k8s-node{{ loop.index }}
+{% endfor %}
+
+[etcd]
+{% set etcd_count = 1 %}
+{% for node in app_nodes[:3] %}
+k8s-node{{ loop.index }}
+{% set etcd_count = etcd_count + 1 %}
+{% endfor %}
+
+[kube_node]
+{% for node in app_nodes %}
+k8s-node{{ loop.index }}
+{% endfor %}
+
+[k8s_clients]
+{% for node in data_nodes %}
+data-node{{ loop.index }} ansible_host={{ node.mgmt_ip_address }} user={{ username }} ansible_ssh_pass={{ password }} ansible_become_password={{ password }}
+{% endfor %}
+

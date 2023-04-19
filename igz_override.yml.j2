@@ -1,0 +1,8 @@
+kube_version: v1.24.10
+preinstall_selinux_state: disabled
+kube_proxy_mode: iptables
+calico_datastore: etcd
+igz_registry_host: "{{ igz_registry_host }}"
+igz_registry_port: 8009
+supplementary_addresses_in_ssl_keys: "{{ supplementary_addresses_in_ssl_keys }}"
+canal_iface: "{{ canal_iface if canal_iface else 'eth1' }}"
