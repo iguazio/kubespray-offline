@@ -95,23 +95,21 @@ source venv/default/bin/activate
 pip install -U pip
 pip install -r $KUBESPRAY_DIR_NAME/requirements.txt
 
-# Create inventory and offline.yml
+# Create inventory and copy offline.yml and override.yml
 python3 ./igz_inventory_builder.py ${@}
 pushd ./$KUBESPRAY_DIR_NAME
 cp -r inventory/sample inventory/igz
 cp ../offline.yml inventory/igz/group_vars/all/
 cp ../igz_override.yml .
-popd 
+cp ../igz_inventory.ini ./inventory/igz
 
 # Copy playbook for offline repo
-cp -r playbook ./$KUBESPRAY_DIR_NAME
+cp -r ../playbook .
 
 cd ./$KUBESPRAY_DIR_NAME
 
 # Run playbook
-echo "NEED INVENTORY HERE!!!"
-exit 0
-ansible-playbook -i ${your_inventory_file} playbook/offline-repo.yml
+ansible-playbook -i inventory/igz/igz_inventory.ini playbook/offline-repo.yml
 # TODO - Unify with kubespray deployment
 
 # Run kubespray

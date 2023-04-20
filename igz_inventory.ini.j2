@@ -16,10 +16,8 @@ k8s-node{{ loop.index }}
 {% endfor %}
 
 [etcd]
-{% set etcd_count = 1 %}
 {% for node in app_nodes[:3] %}
 k8s-node{{ loop.index }}
-{% set etcd_count = etcd_count + 1 %}
 {% endfor %}
 
 [kube_node]
@@ -27,8 +25,12 @@ k8s-node{{ loop.index }}
 k8s-node{{ loop.index }}
 {% endfor %}
 
+[k8s_cluster:children]
+kube_control_plane
+kube_node
+
 [k8s_clients]
 {% for node in data_nodes %}
-data-node{{ loop.index }} ansible_host={{ node.mgmt_ip_address }} user={{ username }} ansible_ssh_pass={{ password }} ansible_become_password={{ password }}
+data-node{{ loop.index }} ansible_host={{ node }} user={{ username }} ansible_ssh_pass={{ password }} ansible_become_password={{ password }}
 {% endfor %}
 
