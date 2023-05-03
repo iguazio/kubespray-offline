@@ -115,7 +115,7 @@ class SysConfigProcessor:
         if vip:
             self.vip = vip
 
-    def generate_inventory(self, template_file="igz_inventory.ini.j2", output_file="igz_inventory.ini"):
+    def generate_inventory(self, template_file="./igz_inventory.ini.j2", output_file="igz_inventory.ini"):
         """
         Generates an INI file using a Jinja2 template, populated with the extracted
         node and cluster information. The INI file is saved to the current directory.
@@ -140,7 +140,7 @@ class SysConfigProcessor:
         with open(output_file, "w") as file:
             file.write(rendered_template)
 
-    def generate_overrides(self, template_file="igz_override.yml.j2", output_file="igz_override.yml"):
+    def generate_overrides(self, template_file="./igz_override.yml.j2", output_file="igz_override.yml"):
         """
         Generates YAML file using a Jinja2 template, populated with the extracted
         node and cluster information. The YAML file is saved to the current directory.

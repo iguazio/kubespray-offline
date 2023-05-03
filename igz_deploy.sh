@@ -8,7 +8,7 @@ BASEDIR="."
 FILES_DIR=./files
 KUBESPRAY_DIR_NAME=kubespray-$KUBESPRAY_VERSION
 BASEDIR=$(cd $BASEDIR; pwd)
-NGINX_IMAGE=nginx:1.23
+NGINX_IMAGE=iguazio/nginx_server:latest
 
 select_latest() {
     local latest=$(ls $* | tail -1)
@@ -106,10 +106,8 @@ cp ../igz_inventory.ini ./inventory/igz
 # Copy playbook for offline repo
 cp -r ../playbook .
 
-cd ./$KUBESPRAY_DIR_NAME
-
 # Run playbook
-ansible-playbook -i inventory/igz/igz_inventory.ini playbook/offline-repo.yml
+ansible-playbook -i inventory/igz/igz_inventory.ini playbook/offline-repo.yml --become --extra-vars=@igz_override.yml
 # TODO - Unify with kubespray deployment
 
 # Run kubespray
