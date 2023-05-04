@@ -4,6 +4,9 @@
 set -e
 . ./config.sh
 
+# We override the variables rather than modifying the opriginal file
+. ./igz_config.sh
+
 BASEDIR="."
 FILES_DIR=./files
 KUBESPRAY_DIR_NAME=kubespray-$KUBESPRAY_VERSION
@@ -105,11 +108,12 @@ cp ../igz_inventory.ini ./inventory/igz
 
 # Copy playbook for offline repo
 cp -r ../playbook .
-
+cp ../igz_post_install.yml .
 # Run playbook
 ansible-playbook -i inventory/igz/igz_inventory.ini playbook/offline-repo.yml --become --extra-vars=@igz_override.yml
 # TODO - Unify with kubespray deployment
 
 # Run kubespray
-ansible-playbook -i inventory/igz/igz_inventory.ini cluster.yml --become --extra-vars=@igz_override.yml
+ansible-playbook -i inventory/igz/igz_inventory.ini cluster.yml --become --extra-vars=@igz_override.yml --extra-vars reset_confirmation=yes
+ansible-playbook -i inventory/igz/igz_inventory.ini igz_post_install.yml --become --extra-vars=@igz_override.yml
 

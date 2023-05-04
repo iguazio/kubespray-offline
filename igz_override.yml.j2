@@ -4,5 +4,7 @@ kube_proxy_mode: iptables
 calico_datastore: etcd
 igz_registry_host: "{{ igz_registry_host }}"
 igz_registry_port: 8009
-supplementary_addresses_in_ssl_keys: "{{ supplementary_addresses_in_ssl_keys }}"
+supplementary_addresses_in_ssl_keys: [{{ supplementary_addresses_in_ssl_keys }}]
 canal_iface: "{{ canal_iface if canal_iface else 'eth1' }}"
+kubeconfig_localhost: yes
+kubectl_localhost: yes

@@ -1,0 +1,47 @@
+---
+- hosts: kube_control_plane
+  tasks:
+    - name: Create external_admin.conf
+      shell: sed 's#server:.*#server:\ https://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:6443#g' /etc/kubernetes/admin.conf  > /etc/kubernetes/external_admin.conf
+      become: yes
+
+    - name: restart kubelet
+      service:
+        name: kubelet
+        state: restarted
+      become: yes
+
+- hosts: k8s_clients:k8s_cluster
+  tasks:
+    - name: "create .kube directory"
+      file:
+        path: "/home/{{ ansible_user }}/.kube"
+        state: directory
+
+    - name: "Copy admin kube config file to node"
+      copy:
+        src: "{{ inventory_dir }}/artifacts/admin.conf"
+        dest: "/home/{{ ansible_user }}/.kube/config"
+        owner: "{{ ansible_user }}"
+        mode: 0400
+
+    - name: Copy kubectl binary to client
+      copy:
+        src: "{{ inventory_dir }}/artifacts/kubectl"
+        dest: "{{ bin_dir }}/kubectl"
+        mode: 0755
+      become: yes
+
+    - name: Install kubectl bash completion
+      shell: "{{ bin_dir }}/kubectl completion bash > /etc/bash_completion.d/kubectl.sh"
+      when: ansible_os_family in ['Debian', 'Ubuntu', 'RedHat']
+      become: yes
+
+    - name: Set kubectl bash completion file permissions
+      file:
+        path: /etc/bash_completion.d/kubectl.sh
+        owner: root
+        group: root
+        mode: 0755
+      when: ansible_os_family in ['Debian', 'Ubuntu', 'RedHat']
+      become: yes

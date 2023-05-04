@@ -162,7 +162,7 @@ class SysConfigProcessor:
 
         rendered_template = template.render(igz_registry_host=igz_registry_host, igz_registry_port=igz_registry_port,
                                             supplementary_addresses_in_ssl_keys=supplementary_addresses_in_ssl_keys,
-                                            canal_iface=canal_iface)
+                                            canal_iface=canal_iface, apiserver_vip=self.vip)
 
         with open(output_file, "w") as file:
             file.write(rendered_template)

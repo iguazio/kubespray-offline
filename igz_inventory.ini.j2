@@ -5,11 +5,6 @@ k8s-node{{ loop.index }} ansible_host={{ node.mgmt_ip_address }} ansible_user={{
 {% endif %}
 {% endfor %}
 
-
-[all:vars]
-supplementary_addresses_in_ssl_keys={{ supplementary_addresses_in_ssl_keys }}
-canal_iface={{ canal_iface if canal_iface else 'eth1' }}
-
 [kube_control_plane]
 {% for node in app_nodes[:3] %}
 k8s-node{{ loop.index }}
