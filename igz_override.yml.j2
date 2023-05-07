@@ -8,3 +8,9 @@ supplementary_addresses_in_ssl_keys: [{{ supplementary_addresses_in_ssl_keys }}]
 canal_iface: "{{ canal_iface if canal_iface else 'eth1' }}"
 kubeconfig_localhost: yes
 kubectl_localhost: yes
+{%  if apiserver_vip and 'domain_name' in apiserver_vip and 'ip_address' in apiserver_vip %}
+apiserver_loadbalancer_domain_name: "{{ apiserver_vip['domain_name'] }}"
+loadbalancer_apiserver:
+  address: {{ apiserver_vip['ip_address'] }}
+  port: {{ apiserver_vip['port']|default('8383') }}
+{% endif %}

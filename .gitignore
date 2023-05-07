@@ -8,4 +8,5 @@ outputs/
 cache/
 .vagrant/
 .venv/
-
+venv/
+system_config.yaml
