@@ -49,7 +49,7 @@ echo "Working in $(pwd)"
 
 # Copy Iguazio files
 cp igz_deploy.sh ./outputs/
-cp igz_override.yml ./outputs/
+cp igz_override.yml.j2 ./outputs/
 cp offline.yml ./outputs/
 cp igz_inventory* ./outputs/
 cp igz_config.sh ./outputs/
