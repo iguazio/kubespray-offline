@@ -15,8 +15,6 @@ PATCH_DIR=${CURRENT_DIR}/target-scripts/patches/${KUBESPRAY_VERSION}
 ./get-kubespray.sh
 ./pypi-mirror.sh
 
-#sudo chown -R iguazzio:iguazio $KUBESPRAY_DIR 
-
 # We need to break the flow to set kube_version and apply the required patches
 
 if [[ ! -d "${PATCH_DIR}" ]]; then
@@ -44,8 +42,6 @@ done
 ./create-repo.sh
 ./copy-target-scripts.sh
 ./download-additional-containers.sh
-
-echo "Working in $(pwd)"
 
 # Copy Iguazio files
 cp igz_deploy.sh ./outputs/
