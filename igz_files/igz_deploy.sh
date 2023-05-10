@@ -7,6 +7,23 @@ set -e
 # We override the variables rather than modifying the opriginal file
 . ./igz_config.sh
 
+echo "============ ALEXP =================="
+echo ${@}
+echo "============ ALEXP =================="
+
+RESET="no"
+for arg in "$@"
+do
+    if [ "$arg" == "--reset" ]; then
+        echo "Reset argument detected!"
+        RESET="yes"
+        break
+    fi
+done
+
+echo $RESET
+exit 0
+
 BASEDIR="."
 FILES_DIR=./files
 KUBESPRAY_DIR_NAME=kubespray-$KUBESPRAY_VERSION
@@ -99,10 +116,11 @@ pip install -U pip
 pip install -r $KUBESPRAY_DIR_NAME/requirements.txt
 
 # Create inventory and copy offline.yml and override.yml
-python3 ./igz_inventory_builder.py ${@}
+python3 ./igz_inventory_builder.py "${@: -3}"
 pushd ./$KUBESPRAY_DIR_NAME
 cp -r inventory/sample inventory/igz
-cp ../offline.yml inventory/igz/group_vars/all/
+# Copy and rename file in one line
+cat ../igz_offline.yml > inventory/igz/group_vars/all/offline.yml
 cp ../igz_override.yml .
 cp ../igz_inventory.ini ./inventory/igz
 
@@ -113,8 +131,13 @@ cp ../igz_post_install.yml .
 ansible-playbook -i inventory/igz/igz_inventory.ini playbook/offline-repo.yml --become --extra-vars=@igz_override.yml
 # TODO - Unify with kubespray deployment
 
+# Reset Kubespray
+if [[ "${RESET}" == "yes" ]]; then
+  ansible-playbook -i inventory/igz/igz_inventory.ini reset.yml --become --extra-vars=@igz_override.yml --extra-vars reset_confirmation=yes
+fi
+
 # Run kubespray
-ansible-playbook -i inventory/igz/igz_inventory.ini cluster.yml --become --extra-vars=@igz_override.yml --extra-vars reset_confirmation=yes
+ansible-playbook -i inventory/igz/igz_inventory.ini cluster.yml --become --extra-vars=@igz_override.yml
 ansible-playbook -i inventory/igz/igz_inventory.ini igz_post_install.yml --become --extra-vars=@igz_override.yml
 
 # Cleanup

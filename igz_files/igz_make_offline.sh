@@ -44,13 +44,15 @@ done
 ./download-additional-containers.sh
 
 # Copy Iguazio files
-cp igz_deploy.sh ./outputs/
-cp igz_override.yml.j2 ./outputs/
-cp offline.yml ./outputs/
-cp igz_inventory* ./outputs/
-cp igz_config.sh ./outputs/
-cp igz_inventory_builder.py ./outputs/
-cp igz_post_install.yml ./outputs/
+pushd ./igz_files
+cp igz_deploy.sh ../outputs/
+cp igz_override.yml.j2 ../outputs/
+cp igz_offline.yml ../outputs/
+cp igz_inventory* ../outputs/
+cp igz_config.sh ../outputs/
+cp igz_inventory_builder.py ../outputs/
+cp igz_post_install.yml ../outputs/
+popd
 
 echo "<=== Kubespray $KUBESPRAY_VERSION is ready for offline deployment"
 exit 0

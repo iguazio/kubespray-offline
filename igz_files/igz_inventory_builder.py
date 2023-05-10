@@ -189,9 +189,6 @@ class SysConfigProcessor:
             file.write(template)
 
 
-
-
-
 def _parse_cli():
     parser = argparse.ArgumentParser()
     parser.add_argument('system_config')
