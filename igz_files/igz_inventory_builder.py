@@ -42,6 +42,8 @@ class SysConfigProcessor:
         self.username = ''
         self.password = ''
         self.canal_iface = ''
+        self.system_id = ''
+        self.domain = ''
 
         with open(self.yaml_file, 'r') as file:
             self.config = yaml.safe_load(file)
@@ -49,6 +51,8 @@ class SysConfigProcessor:
         self.get_nodes()
         self.get_data_nodes()
         self.get_vip()
+        self.get_id()
+        self.get_domain()
 
     def get_nodes(self):
         """
@@ -106,6 +110,16 @@ class SysConfigProcessor:
                     self.data_nodes.append(ip_address)
                     break
 
+    def get_id(self):
+        system_id = self.config.get('meta', {}).get('id', {})
+        if system_id:
+            self.system_id = system_id
+
+    def get_domain(self):
+        domain = self.config.get('spec', {}).get('domain', {})
+        if domain:
+            self.domain = domain
+
     def get_vip(self):
         """
         Checks if the 'spec.app_cluster.apiserver_vip' key exists in the YAML file.
@@ -124,8 +138,7 @@ class SysConfigProcessor:
             template_file (str): Path to the Jinja2 template file. Default is "igz_inventory.ini.j2".
             output_file (str): Path to the output INI file. Default is "igz_inventory.ini".
         """
-        env = Environment(loader=FileSystemLoader(os.path.dirname(template_file)), trim_blocks=True, lstrip_blocks=True)
-        template = env.get_template(os.path.basename(template_file))
+        template = SysConfigProcessor._get_template_file(template_file)
 
         app_nodes = self.nodes
         data_nodes = self.data_nodes
@@ -137,8 +150,7 @@ class SysConfigProcessor:
                                             username=username,
                                             password=password)
 
-        with open(output_file, "w") as file:
-            file.write(rendered_template)
+        SysConfigProcessor._write_template(output_file, rendered_template)
 
     def generate_overrides(self, template_file="./igz_override.yml.j2", output_file="igz_override.yml"):
         """
@@ -149,8 +161,7 @@ class SysConfigProcessor:
            template_file (str): Path to the Jinja2 template file. Default is "igz_override.yml.j2".
            output_file (str): Path to the output INI file. Default is "igz_override.yml".
         """
-        env = Environment(loader=FileSystemLoader(os.path.dirname(template_file)), trim_blocks=True, lstrip_blocks=True)
-        template = env.get_template(os.path.basename(template_file))
+        template = SysConfigProcessor._get_template_file(template_file)
 
         igz_registry_host = self.data_nodes[0]
         igz_registry_port = 8009
@@ -159,13 +170,26 @@ class SysConfigProcessor:
             external_ips.append(self.vip['ip_address'])
         supplementary_addresses_in_ssl_keys = ','.join(external_ips)
         canal_iface = self.canal_iface
+        system_fqdn = '.'.join([self.system_id, self.domain])
 
         rendered_template = template.render(igz_registry_host=igz_registry_host, igz_registry_port=igz_registry_port,
                                             supplementary_addresses_in_ssl_keys=supplementary_addresses_in_ssl_keys,
-                                            canal_iface=canal_iface, apiserver_vip=self.vip)
+                                            canal_iface=canal_iface, apiserver_vip=self.vip, system_fqdn=system_fqdn)
 
-        with open(output_file, "w") as file:
-            file.write(rendered_template)
+        SysConfigProcessor._write_template(output_file, rendered_template)
+
+    @staticmethod
+    def _get_template_file(f):
+        env = Environment(loader=FileSystemLoader(os.path.dirname(f)), trim_blocks=True, lstrip_blocks=True)
+        return env.get_template(os.path.basename(f))
+
+    @staticmethod
+    def _write_template(f, template):
+        with open(f, "w") as file:
+            file.write(template)
+
+
+
 
 
 def _parse_cli():

@@ -45,3 +45,41 @@
         mode: 0755
       when: ansible_os_family in ['Debian', 'Ubuntu', 'RedHat']
       become: yes
+
+- hosts: k8s-cluster
+  tasks:
+    - name: Create symlink for nerdctl
+      file:
+        src: /usr/local/bin/nerdctl
+        dest: /usr/bin/nerdctl
+        state: link
+      become: yes
+
+    - name: Pre-load bootstrap images with nerdctl
+      shell:
+        /usr/local/bin/nerdctl load -i {{ temp_dir }}/k8s_apps/bootstrap_apps.tar.gz
+      become: yes
+
+    - name: Configure insecure registries
+      become: yes
+      block:
+        - name: Create directory
+          file:
+            path: "/etc/containerd/certs.d/{{ item }}+{{ system_fqdn }}:80"
+            state: directory
+          loop:
+            - "datanode-registry.iguazio-platform.app."
+            - "docker-registry.iguazio-platform.app."
+            - "docker-registry.default-tenant.app."
+
+        - name: Create hosts.toml from template
+          template:
+            src: igz_hosts.toml.j2
+            dest: "/etc/containerd/certs.d/{{ item }}+{{ system_fqdn }}:80/hosts.toml"
+          loop:
+            - "datanode-registry.iguazio-platform.app."
+            - "docker-registry.iguazio-platform.app."
+            - "docker-registry.default-tenant.app."
+
+
+

@@ -14,3 +14,5 @@ loadbalancer_apiserver:
   address: {{ apiserver_vip['ip_address'] }}
   port: {{ apiserver_vip['port']|default('8383') }}
 {% endif %}
+system_fqdn: {{ system_fqdn }}
+kube_network_plugin: canal

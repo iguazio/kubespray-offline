@@ -117,3 +117,5 @@ ansible-playbook -i inventory/igz/igz_inventory.ini playbook/offline-repo.yml --
 ansible-playbook -i inventory/igz/igz_inventory.ini cluster.yml --become --extra-vars=@igz_override.yml --extra-vars reset_confirmation=yes
 ansible-playbook -i inventory/igz/igz_inventory.ini igz_post_install.yml --become --extra-vars=@igz_override.yml
 
+# Cleanup
+docker stop -f $(docker ps -aq)
