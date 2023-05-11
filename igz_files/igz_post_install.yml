@@ -65,7 +65,7 @@
       block:
         - name: Create directory
           file:
-            path: "/etc/containerd/certs.d/{{ item }}+{{ system_fqdn }}:80"
+            path: "/etc/containerd/certs.d/{{ item }}{{ system_fqdn }}:80"
             state: directory
           loop:
             - "datanode-registry.iguazio-platform.app."
@@ -75,7 +75,7 @@
         - name: Create hosts.toml from template
           template:
             src: igz_hosts.toml.j2
-            dest: "/etc/containerd/certs.d/{{ item }}+{{ system_fqdn }}:80/hosts.toml"
+            dest: "/etc/containerd/certs.d/{{ item }}{{ system_fqdn }}:80/hosts.toml"
           loop:
             - "datanode-registry.iguazio-platform.app."
             - "docker-registry.iguazio-platform.app."

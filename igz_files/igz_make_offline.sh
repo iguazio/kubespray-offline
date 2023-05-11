@@ -34,7 +34,7 @@ done
 # Apply all patches
 for patch in ${PATCH_DIR}/*.patch; do
   echo "===> Apply patch $patch"
-  (cd $KUBESPRAY_DIR && patch --verbose -p1 < $patch) || exit 1
+  (cd $KUBESPRAY_DIR && patch --force --verbose -p1 < $patch) || exit 1
 done
 
 # Continue with the flow

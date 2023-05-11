@@ -21,9 +21,6 @@ do
     fi
 done
 
-echo $RESET
-exit 0
-
 BASEDIR="."
 FILES_DIR=./files
 KUBESPRAY_DIR_NAME=kubespray-$KUBESPRAY_VERSION
@@ -141,4 +138,4 @@ ansible-playbook -i inventory/igz/igz_inventory.ini cluster.yml --become --extra
 ansible-playbook -i inventory/igz/igz_inventory.ini igz_post_install.yml --become --extra-vars=@igz_override.yml
 
 # Cleanup
-docker stop -f $(docker ps -aq)
+docker rm -f $(docker ps -aq)
