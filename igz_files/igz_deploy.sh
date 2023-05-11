@@ -7,19 +7,32 @@ set -e
 # We override the variables rather than modifying the opriginal file
 . ./igz_config.sh
 
-echo "============ ALEXP =================="
-echo ${@}
-echo "============ ALEXP =================="
-
 RESET="no"
 for arg in "$@"
 do
     if [ "$arg" == "--reset" ]; then
-        echo "Reset argument detected!"
+        echo "If reset is requsted we assume Kubespray was installed from this host at least once"
+        echo "This means the venv already exists"
         RESET="yes"
-        break
+        source venv/default/bin/activate && \
+        pushd $KUBESPRAY_DIR_NAME && \
+        ansible-playbook -i inventory/igz/igz_inventory.ini reset.yml --become --extra-vars=@igz_override.yml --extra-vars reset_confirmation=yes
+        popd
     fi
 done
+
+# Check if registry is running and bring it up if not
+REGISRTY_RUNNNG=$(docker ps --quiet --filter name=docker_registry)
+if [[ -n ${REGISRTY_RUNNNG} ]]; then
+  echo "Registry is already running"
+else
+  # Dirty hack - if only I could use Ansible everywhere
+  source /etc/ansible/facts.d/registry.fact
+  pushd $platform_dir
+  manof run docker_registry --node-name $system_node_name --data-dir $docker_registry_path --storage-filesystem-maxthreads registry_fs_maxthreads
+  popd
+fi
+
 
 BASEDIR="."
 FILES_DIR=./files
