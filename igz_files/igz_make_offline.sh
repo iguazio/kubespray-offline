@@ -43,16 +43,18 @@ done
 ./copy-target-scripts.sh
 ./download-additional-containers.sh
 
+echo "<=== Fetching Iguazio scripts ===>"
+
 # Copy Iguazio files
-pushd ./igz_files
-cp igz_deploy.sh ../outputs/
-cp igz_override.yml.j2 ../outputs/
-cp igz_offline.yml ../outputs/
-cp igz_inventory* ../outputs/
-cp igz_config.sh ../outputs/
-cp igz_inventory_builder.py ../outputs/
-cp igz_post_install.yml ../outputs/
-popd
+cp igz_deploy.sh /outputs/
+cp igz_override.yml.j2 /outputs/
+cp igz_offline.yml /outputs/
+cp igz_inventory* /outputs/
+cp igz_config.sh /outputs/
+cp igz_inventory_builder.py /outputs/
+cp igz_post_install.yml /outputs/
+
+chown -R iguazio:iguazio /outputs
 
 echo "<=== Kubespray $KUBESPRAY_VERSION is ready for offline deployment"
 exit 0
