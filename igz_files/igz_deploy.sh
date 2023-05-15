@@ -133,6 +133,7 @@ cp -r inventory/sample inventory/igz
 cat ../igz_offline.yml > inventory/igz/group_vars/all/offline.yml
 cp ../igz_override.yml .
 cp ../igz_inventory.ini ./inventory/igz
+cp ../igz_hosts.toml.j2 .
 
 # Copy playbook for offline repo
 cp -r ../playbook .
@@ -147,8 +148,10 @@ if [[ "${RESET}" == "yes" ]]; then
 fi
 
 # Run kubespray
-ansible-playbook -i inventory/igz/igz_inventory.ini cluster.yml --become --extra-vars=@igz_override.yml
+#ansible-playbook -i inventory/igz/igz_inventory.ini cluster.yml --become --extra-vars=@igz_override.yml
 ansible-playbook -i inventory/igz/igz_inventory.ini igz_post_install.yml --become --extra-vars=@igz_override.yml
 
 # Cleanup
 docker rm -f $(docker ps -aq)
+echo "<=== Kubespray deployed. Happy k8s'ing ===>"
+exit 0

@@ -48,6 +48,18 @@
 
 - hosts: k8s_cluster
   tasks:
+    - name: Copy Kompton facts
+      copy:
+        src: /etc/ansible/facts.d/registry.fact
+        dest: /etc/ansible/facts.d/
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Make sure we pick up all facts passed by Kompton
+      setup:
+        filter: ansible_local
+
     - name: Create symlink for nerdctl
       file:
         src: /usr/local/bin/nerdctl
@@ -55,9 +67,13 @@
         state: link
       become: yes
 
+    - name: ALEXP
+      debug:
+        msg: "{{ ansible_local }}"
+
     - name: Pre-load bootstrap images with nerdctl
       shell:
-        /usr/local/bin/nerdctl load -i {{ temp_dir }}/k8s_apps/bootstrap_apps.tar.gz
+        /usr/local/bin/nerdctl load -i {{ ansible_local.registry.kompton.temp_dir }}/k8s_apps/bootstrap_apps.tar.gz
       become: yes
 
     - name: Configure insecure registries
@@ -80,6 +96,4 @@
             - "datanode-registry.iguazio-platform.app."
             - "docker-registry.iguazio-platform.app."
             - "docker-registry.default-tenant.app."
-
-
 
