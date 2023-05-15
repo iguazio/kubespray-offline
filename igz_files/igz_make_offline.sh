@@ -54,7 +54,5 @@ cp igz_config.sh /outputs/
 cp igz_inventory_builder.py /outputs/
 cp igz_post_install.yml /outputs/
 
-chown -R iguazio:iguazio /outputs
-
-echo "<=== Kubespray $KUBESPRAY_VERSION is ready for offline deployment"
+echo "<=== Kubespray $KUBESPRAY_VERSION is ready for offline deployment ===>"
 exit 0

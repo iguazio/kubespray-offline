@@ -46,7 +46,7 @@
       when: ansible_os_family in ['Debian', 'Ubuntu', 'RedHat']
       become: yes
 
-- hosts: k8s-cluster
+- hosts: k8s_cluster
   tasks:
     - name: Create symlink for nerdctl
       file:
