@@ -46,7 +46,7 @@ done
 echo "<=== Fetching Iguazio scripts ===>"
 
 # Copy Iguazio files
-find . -type f -name "igz_/" -exec cp {} /outputs/ \;
+find . -type f -name "igz_*" -exec cp {} /outputs/ \;
 #cp igz_deploy.sh /outputs/
 #cp igz_override.yml.j2 /outputs/
 #cp igz_offline.yml /outputs/
