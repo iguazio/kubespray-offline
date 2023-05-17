@@ -1,0 +1,16 @@
+--- config.toml.backup  2023-05-17 10:11:33.843861093 +0300
++++ config.toml 2023-05-17 10:36:57.609674586 +0300
+@@ -32,6 +32,14 @@
+
+           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+             systemdCgroup = true
++          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]
++            privileged_without_host_devices = false
++            runtime_engine = ""
++            runtime_root = ""
++            runtime_type = "io.containerd.runc.v1"
++            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]
++              BinaryName = "/usr/bin/nvidia-container-runtime"
++              SystemdCgroup = true
+     [plugins."io.containerd.grpc.v1.cri".registry]
+       config_path = "/etc/containerd/certs.d"

@@ -73,7 +73,7 @@
 
     - name: Pre-load bootstrap images with nerdctl
       shell:
-        /usr/local/bin/nerdctl load -i {{ ansible_local.registry.kompton.temp_dir }}/k8s_apps/bootstrap_apps.tar.gz
+        /usr/local/bin/nerdctl load -i {{ ansible_local.registry.kompton.temp_dir }}/bootstrap_apps.tar.gz
       become: yes
 
     - name: Configure insecure registries

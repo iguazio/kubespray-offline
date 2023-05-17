@@ -1,7 +1,12 @@
 # inventory.ini.j2
 [all]
 {% for node in app_nodes %}
-k8s-node{{ loop.index }} ansible_host={{ node.mgmt_ip_address }} ansible_user={{ username }} ansible_ssh_pass={{ password }} ansible_become_password={{ password }} ip={{ node.client_ip_address }} {% if loop.index <= 3 %}etcd_member_name=etcd{{ loop.index }} 
+k8s-node{{ loop.index }} ansible_host={{ node.mgmt_ip_address }} ansible_user={{ username }} ansible_ssh_pass={{ password }} ansible_become_password={{ password }} ip={{ node.client_ip_address }} {% if app_nodes|length < 3 %}
+    {% if loop.first %}etcd_member_name=etcd{{ loop.index }}
+{% endif %}
+{% else %}
+    {% if loop.index <= 3 %}etcd_member_name=etcd{{ loop.index }}
+{% endif %}
 {% endif %}
 {% endfor %}
 
@@ -28,4 +33,3 @@ kube_node
 {% for node in data_nodes %}
 data-node{{ loop.index }} ansible_host={{ node }} ansible_user={{ username }} ansible_ssh_pass={{ password }} ansible_become_password={{ password }}
 {% endfor %}
-

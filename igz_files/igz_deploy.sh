@@ -7,6 +7,12 @@ set -e
 # We override the variables rather than modifying the opriginal file
 . ./igz_config.sh
 
+BASEDIR="."
+FILES_DIR=./files
+KUBESPRAY_DIR_NAME=kubespray-$KUBESPRAY_VERSION
+BASEDIR=$(cd $BASEDIR; pwd)
+NGINX_IMAGE=iguazio/nginx_server:latest
+
 RESET="no"
 for arg in "$@"
 do
@@ -15,9 +21,11 @@ do
         echo "This means the venv already exists"
         RESET="yes"
         source venv/default/bin/activate && \
-        pushd $KUBESPRAY_DIR_NAME && \
+        echo "ALEXP - $KUBESPRAY_DIR_NAME" && \
+        cd $KUBESPRAY_DIR_NAME && \
+        echo "ALEXP - $(pwd)" && \
         ansible-playbook -i inventory/igz/igz_inventory.ini reset.yml --become --extra-vars=@igz_override.yml --extra-vars reset_confirmation=yes
-        popd
+        cd -
     fi
 done
 
@@ -27,18 +35,12 @@ if [[ -n ${REGISRTY_RUNNNG} ]]; then
   echo "Registry is already running"
 else
   # Dirty hack - if only I could use Ansible everywhere
-  source /etc/ansible/facts.d/registry.fact
-  pushd $platform_dir
-  manof run docker_registry --node-name $system_node_name --data-dir $docker_registry_path --storage-filesystem-maxthreads registry_fs_maxthreads
+  source <(grep -v '^\s*\[.*\]\s*$' /etc/ansible/facts.d/registry.fact)
+  echo "ALEXP - $platform_dir"
+  pushd $platform_dir/manof
+  manof run docker_registry --node-name $system_node_name --data-dir $docker_registry_path --storage-filesystem-maxthreads $registry_fs_maxthreads
   popd
 fi
-
-
-BASEDIR="."
-FILES_DIR=./files
-KUBESPRAY_DIR_NAME=kubespray-$KUBESPRAY_VERSION
-BASEDIR=$(cd $BASEDIR; pwd)
-NGINX_IMAGE=iguazio/nginx_server:latest
 
 select_latest() {
     local latest=$(ls $* | tail -1)
