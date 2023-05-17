@@ -47,13 +47,9 @@ echo "<=== Fetching Iguazio scripts ===>"
 
 # Copy Iguazio files
 find . -type f -name "igz_*" -exec cp {} /outputs/ \;
-#cp igz_deploy.sh /outputs/
-#cp igz_override.yml.j2 /outputs/
-#cp igz_offline.yml /outputs/
-#cp igz_inventory* /outputs/
-#cp igz_config.sh /outputs/
-#cp igz_inventory_builder.py /outputs/
-#cp igz_post_install.yml /outputs/
+
+# This does not fall under any category
+cp ./igz_patches/nvidia/config.toml.patch /outputs
 
 echo "<=== Kubespray $KUBESPRAY_VERSION is ready for offline deployment ===>"
 exit 0

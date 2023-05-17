@@ -136,10 +136,12 @@ cat ../igz_offline.yml > inventory/igz/group_vars/all/offline.yml
 cp ../igz_override.yml .
 cp ../igz_inventory.ini ./inventory/igz
 cp ../igz_hosts.toml.j2 .
+cp ../config.toml.patch .
 
 # Copy playbook for offline repo
 cp -r ../playbook .
 cp ../igz_post_install.yml .
+
 # Run playbook
 ansible-playbook -i inventory/igz/igz_inventory.ini playbook/offline-repo.yml --become --extra-vars=@igz_override.yml
 # TODO - Unify with kubespray deployment

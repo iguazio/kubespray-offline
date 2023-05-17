@@ -47,6 +47,7 @@
       become: yes
 
 - hosts: k8s_cluster
+  become: true
   tasks:
     - name: Copy Kompton facts
       copy:
@@ -65,19 +66,32 @@
         src: /usr/local/bin/nerdctl
         dest: /usr/bin/nerdctl
         state: link
-      become: yes
 
-    - name: ALEXP
-      debug:
-        msg: "{{ ansible_local }}"
+    - name: Patch containerd config to work with nvidia runtime
+      copy:
+        src: config.toml.patch
+        dest: /etc/containerd/
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Patch containerd config to work with nvidia runtime
+      command:
+        cmd: patch -p1 -i /etc/containerd/config.toml.patch
+        chdir: /etc/containerd/
+      register: patch_result
+      failed_when: patch_result.rc > 1
+
+    - name: Restart containerd service
+      systemd:
+        name: containerd
+        state: restarted 
 
     - name: Pre-load bootstrap images with nerdctl
       shell:
         /usr/local/bin/nerdctl load -i {{ ansible_local.registry.kompton.temp_dir }}/bootstrap_apps.tar.gz
-      become: yes
 
     - name: Configure insecure registries
-      become: yes
       block:
         - name: Create directory
           file:
