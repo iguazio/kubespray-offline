@@ -11,14 +11,22 @@ k8s-node{{ loop.index }} ansible_host={{ node.mgmt_ip_address }} ansible_user={{
 {% endfor %}
 
 [kube_control_plane]
+{% if app_nodes|length < 3 %}
+k8s-node1
+{% else %}
 {% for node in app_nodes[:3] %}
 k8s-node{{ loop.index }}
 {% endfor %}
+{% endif %}
 
 [etcd]
+{% if app_nodes|length < 3 %}
+k8s-node1
+{% else %}
 {% for node in app_nodes[:3] %}
 k8s-node{{ loop.index }}
 {% endfor %}
+{% endif %}
 
 [kube_node]
 {% for node in app_nodes %}

@@ -67,7 +67,7 @@
         dest: /usr/bin/nerdctl
         state: link
 
-    - name: Patch containerd config to work with nvidia runtime
+    - name: Copy nvidia runtime patch for containerd
       copy:
         src: config.toml.patch
         dest: /etc/containerd/
@@ -77,7 +77,7 @@
 
     - name: Patch containerd config to work with nvidia runtime
       command:
-        cmd: patch -p1 -i /etc/containerd/config.toml.patch
+        cmd: patch config.toml <  config.toml.patch
         chdir: /etc/containerd/
       register: patch_result
       failed_when: patch_result.rc > 1
