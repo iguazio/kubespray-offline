@@ -76,8 +76,8 @@
         mode: 0755
 
     - name: Patch containerd config to work with nvidia runtime
-      command:
-        cmd: patch config.toml <  config.toml.patch
+      shell:
+        cmd: patch config.toml < config.toml.patch
         chdir: /etc/containerd/
       register: patch_result
       failed_when: patch_result.rc > 1
