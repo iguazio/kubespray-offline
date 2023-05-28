@@ -17,15 +17,9 @@ RESET="no"
 for arg in "$@"
 do
     if [ "$arg" == "--reset" ]; then
-        echo "If reset is requsted we assume Kubespray was installed from this host at least once"
-        echo "This means the venv already exists"
+        echo "Reset was requested"
         RESET="yes"
-        source venv/default/bin/activate && \
-        echo "ALEXP - $KUBESPRAY_DIR_NAME" && \
-        cd $KUBESPRAY_DIR_NAME && \
-        echo "ALEXP - $(pwd)" && \
-        ansible-playbook -i inventory/igz/igz_inventory.ini reset.yml --become --extra-vars=@igz_override.yml --extra-vars reset_confirmation=yes
-        cd -
+        break
     fi
 done
 
