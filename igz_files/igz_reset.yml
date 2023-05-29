@@ -1,0 +1,25 @@
+---
+- hosts: k8s_cluster
+  become: true
+  gather_tasks: false
+  tasks:
+
+    - name: Find and kill any processes with "kube" in the name
+      command: pkill -f kube
+      ignore_errors: true
+
+    - name: Find and kill "flanneld" process
+      command: pkill -f flanneld
+      ignore_errors: true
+
+    - name: Check if "/etc/canal/certs/" directory exists
+      stat:
+        path: "/etc/canal/certs/"
+      register: canal_certs_dir
+
+    - name: Wipe "/etc/canal/certs/" directory if it exists
+      file:
+        state: absent
+        path: "/etc/canal/certs/"
+      when: canal_certs_dir.stat.exists
+

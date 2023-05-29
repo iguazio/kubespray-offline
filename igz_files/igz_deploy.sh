@@ -134,6 +134,7 @@ cp ../config.toml.patch .
 
 # Copy playbook for offline repo
 cp -r ../playbook .
+cp ../igz_reset.yml .
 cp ../igz_post_install.yml .
 
 # Run playbook
@@ -143,6 +144,7 @@ ansible-playbook -i inventory/igz/igz_inventory.ini playbook/offline-repo.yml --
 # Reset Kubespray
 if [[ "${RESET}" == "yes" ]]; then
   ansible-playbook -i inventory/igz/igz_inventory.ini reset.yml --become --extra-vars=@igz_override.yml --extra-vars reset_confirmation=yes
+  ansible-playbook -i inventory/igz/igz_inventory.ini igz_reset.yml --become --extra-vars=@igz_override.yml
 fi
 
 # Run kubespray
