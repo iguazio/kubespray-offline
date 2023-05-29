@@ -32,7 +32,7 @@ else
   source <(grep -v '^\s*\[.*\]\s*$' /etc/ansible/facts.d/registry.fact)
   echo "ALEXP - $platform_dir"
   pushd $platform_dir/manof
-  manof run docker_registry --node-name $system_node_name --data-dir $docker_registry_path --storage-filesystem-maxthreads $registry_fs_maxthreads
+  /usr/local/bin/manof run docker_registry --node-name $system_node_name --data-dir $docker_registry_path --storage-filesystem-maxthreads $registry_fs_maxthreads
   popd
 fi
 
@@ -121,7 +121,7 @@ source venv/default/bin/activate
 pip install -U pip
 pip install -r $KUBESPRAY_DIR_NAME/requirements.txt
 
-# Create inventory and copy offline.yml and override.yml
+# Create inventory and copy Iguazio files
 python3 ./igz_inventory_builder.py "${@: -3}"
 pushd ./$KUBESPRAY_DIR_NAME
 cp -r inventory/sample inventory/igz
