@@ -111,13 +111,23 @@
             - "docker-registry.iguazio-platform.app."
             - "docker-registry.default-tenant.app."
 
+---
 - hosts: k8s_clients
   tasks:
-    - name: Get IDs of all running Docker containers
-      shell: docker ps -q
-      register: result
-   
+    - name: Get names and IDs of all running Docker containers
+      shell: docker ps --format '{{"{{.ID}}:{{.Names}}"}}'
+      register: docker_ps_output
+
+    - name: Create a list of IDs to stop and remove
+      set_fact:
+        docker_ids_to_remove: "{{
+          docker_ps_output.stdout_lines |
+          map('split', ':') |
+          select(lambda x: 'upgrade_tool' not in x[1]) |
+          map('first') |
+          list }}"
+      
     - name: Stop and remove Docker containers
-      shell: docker rm -f {{ item }}
-      with_items: "{{ result.stdout_lines }}"
+      command: docker rm -f {{ item }}
+      loop: "{{ docker_ids_to_remove }}"
 

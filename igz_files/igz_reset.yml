@@ -1,7 +1,7 @@
 ---
 - hosts: k8s_cluster
   become: true
-  gather_tasks: false
+  gather_facts: false
   tasks:
 
     - name: Find and kill any processes with "kube" in the name

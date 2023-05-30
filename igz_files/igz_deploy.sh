@@ -14,12 +14,15 @@ BASEDIR=$(cd $BASEDIR; pwd)
 NGINX_IMAGE=iguazio/nginx_server:latest
 
 RESET="no"
+SKIP_INSTALL="no"
 for arg in "$@"
 do
     if [ "$arg" == "--reset" ]; then
         echo "Reset was requested"
         RESET="yes"
-        break
+    elif [ "$arg" == "--skip-k8s-install" ]; then
+        echo "skip-k8s-install was requested"
+        SKIP_INSTALL="yes"
     fi
 done
 
@@ -123,6 +126,7 @@ pip install -r $KUBESPRAY_DIR_NAME/requirements.txt
 
 # Create inventory and copy Iguazio files
 python3 ./igz_inventory_builder.py "${@: -3}"
+
 pushd ./$KUBESPRAY_DIR_NAME
 cp -r inventory/sample inventory/igz
 # Copy and rename file in one line
@@ -131,15 +135,14 @@ cp ../igz_override.yml .
 cp ../igz_inventory.ini ./inventory/igz
 cp ../igz_hosts.toml.j2 .
 cp ../config.toml.patch .
-
-# Copy playbook for offline repo
-cp -r ../playbook .
 cp ../igz_reset.yml .
 cp ../igz_post_install.yml .
 
-# Run playbook
+# Copy playbook for offline repo
+cp -r ../playbook .
+
+# Run offline repo playbook
 ansible-playbook -i inventory/igz/igz_inventory.ini playbook/offline-repo.yml --become --extra-vars=@igz_override.yml
-# TODO - Unify with kubespray deployment
 
 # Reset Kubespray
 if [[ "${RESET}" == "yes" ]]; then
@@ -148,8 +151,12 @@ if [[ "${RESET}" == "yes" ]]; then
 fi
 
 # Run kubespray
-ansible-playbook -i inventory/igz/igz_inventory.ini cluster.yml --become --extra-vars=@igz_override.yml
-ansible-playbook -i inventory/igz/igz_inventory.ini igz_post_install.yml --become --extra-vars=@igz_override.yml
+if [[ "${SKIP_INSTALL}" == "no" ]]; then
+    ansible-playbook -i inventory/igz/igz_inventory.ini cluster.yml --become --extra-vars=@igz_override.yml
+    ansible-playbook -i inventory/igz/igz_inventory.ini igz_post_install.yml --become --extra-vars=@igz_override.yml
+fi
+
+popd
 
 echo "<=== Kubespray deployed. Happy k8s'ing ===>"
 exit 0
