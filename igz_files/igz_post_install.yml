@@ -113,20 +113,11 @@
 
 - hosts: k8s_clients
   tasks:
-    - name: Get names and IDs of all running Docker containers
-      shell: docker ps --format '{{"{{.ID}}:{{.Names}}"}}'
+    - name: Get names of all running Docker containers
+      shell: "{% raw %}docker ps --format '{{.Names}}'{% endraw %}"
       register: docker_ps_output
 
-    - name: Create a list of IDs to stop and remove
-      set_fact:
-        docker_ids_to_remove: "{{
-          docker_ps_output.stdout_lines |
-          map('split', ':') |
-          select(lambda x: 'upgrade_tool' not in x[1]) |
-          map('first') |
-          list }}"
-      
-    - name: Stop and remove Docker containers
-      command: docker rm -f {{ item }}
-      loop: "{{ docker_ids_to_remove }}"
-
+    - name: Stop and remove Docker containers (but not upgrade_tool)
+      shell: docker rm -f {{ item }}
+      when: '"upgrade_tool" not in item'
+      with_items: "{{ docker_ps_output.stdout_lines }}"
