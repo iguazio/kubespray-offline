@@ -111,7 +111,6 @@
             - "docker-registry.iguazio-platform.app."
             - "docker-registry.default-tenant.app."
 
----
 - hosts: k8s_clients
   tasks:
     - name: Get names and IDs of all running Docker containers

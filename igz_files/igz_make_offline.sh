@@ -51,7 +51,7 @@ find . -type f -name "igz_*" -exec cp {} /outputs/ \;
 # This does not fall under any category
 cp ./igz_patches/nvidia/config.toml.patch /outputs
 
-chmod -R 1000:1000 /outputs
+chown -R 1000:1000 /outputs
 
 echo "<=== Kubespray $KUBESPRAY_VERSION is ready for offline deployment ===>"
 exit 0
