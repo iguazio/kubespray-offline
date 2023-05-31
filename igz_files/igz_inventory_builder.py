@@ -44,6 +44,7 @@ class SysConfigProcessor:
         self.canal_iface = ''
         self.system_id = ''
         self.domain = ''
+        self.data_vip = ''
 
         with open(self.yaml_file, 'r') as file:
             self.config = yaml.safe_load(file)
@@ -105,7 +106,7 @@ class SysConfigProcessor:
         for node in data_nodes:
             interfaces = node.get('interfaces', [])
             for interface in interfaces:
-                if 'mgmt' in interface.get('roles', []):
+                if 'client' in interface.get('roles', []):
                     ip_address = interface.get('ip_address').split('/', 1)[0]
                     self.data_nodes.append(ip_address)
                     break
@@ -128,6 +129,15 @@ class SysConfigProcessor:
         vip = self.config.get('spec', {}).get('app_cluster', {}).get('apiserver_vip', {})
         if vip:
             self.vip = vip
+
+    def get_data_vip(self):
+        """
+        Checks if the 'spec.data_cluster.dashboard_vip' key exists in the YAML file.
+        If it exists, stores the corresponding value as the 'data_vip' property.
+        """
+        vip = self.config.get('spec', {}).get('data_cluster', {}).get('dashboard_vip', {})
+        if vip:
+            self.data_vip = vip
 
     def generate_inventory(self, template_file="./igz_inventory.ini.j2", output_file="igz_inventory.ini"):
         """
@@ -163,7 +173,7 @@ class SysConfigProcessor:
         """
         template = SysConfigProcessor._get_template_file(template_file)
 
-        igz_registry_host = self.data_nodes[0]
+        igz_registry_host = self.data_nodes[0] if not self.data_vip else self.data_vip
         igz_registry_port = 8009
         external_ips = [node['external_ip_address'] for node in self.nodes if node['external_ip_address']]
         if self.vip:
