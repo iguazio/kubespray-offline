@@ -2,43 +2,19 @@
 
 # Exit on any error
 set -e
-. ./config.sh
-
-# We override the variables rather than modifying the opriginal file
-. ./igz_config.sh
+# Override configs to avoid replacing the script multiple times
+cat ./igz_config.sh > ./config.sh && . ./config.sh
 
 BASEDIR="."
 FILES_DIR=./files
 KUBESPRAY_DIR_NAME=kubespray-$KUBESPRAY_VERSION
 BASEDIR=$(cd $BASEDIR; pwd)
 NGINX_IMAGE=iguazio/nginx_server:latest
-
 RESET="no"
 SKIP_INSTALL="no"
-for arg in "$@"
-do
-    if [ "$arg" == "--reset" ]; then
-        echo "Reset was requested"
-        RESET="yes"
-    elif [ "$arg" == "--skip-k8s-install" ]; then
-        echo "skip-k8s-install was requested"
-        SKIP_INSTALL="yes"
-    fi
-done
+LOCAL_REGISTRY=${LOCAL_REGISTRY:-"localhost:${REGISTRY_PORT}"}
 
-# Check if registry is running and bring it up if not
-REGISRTY_RUNNNG=$(docker ps --quiet --filter name=docker_registry)
-if [[ -n ${REGISRTY_RUNNNG} ]]; then
-  echo "Registry is already running"
-else
-  # Dirty hack - if only I could use Ansible everywhere
-  source <(grep -v '^\s*\[.*\]\s*$' /etc/ansible/facts.d/registry.fact)
-  echo "ALEXP - $platform_dir"
-  pushd $platform_dir/manof
-  /usr/local/bin/manof run docker_registry --node-name $system_node_name --data-dir $docker_registry_path --storage-filesystem-maxthreads $registry_fs_maxthreads
-  popd
-fi
-
+# Helper functions ######################
 select_latest() {
     local latest=$(ls $* | tail -1)
     if [ -z "$latest" ]; then
@@ -47,41 +23,6 @@ select_latest() {
     fi
     echo $latest
 }
-
-/usr/bin/docker rm -f nginx || true
-
-# Deploy nginx and registry, push images to registry
-echo "===> Start nginx"
-/usr/bin/docker run -d \
-    --network host \
-    --restart always \
-    --name nginx \
-    -v ${BASEDIR}:/usr/share/nginx/html \
-    ${NGINX_IMAGE}
-
-./setup-offline.sh
-./setup-py.sh
-
-# Install cni plugins
-echo "==> Install CNI plugins"
-mkdir -p /opt/cni/bin
-tar xvzf $(select_latest "${FILES_DIR}/kubernetes/cni/cni-plugins-linux-amd64-v*.tgz") -C /opt/cni/bin
-
-echo "==> Load registry, nginx images"
-NERDCTL=/usr/bin/docker
-pushd ./images
-echo "Pushing images to registry..."
-for f in docker.io_library_registry-*.tar.gz docker.io_library_nginx-*.tar.gz; do
-    $NERDCTL load -i $f
-done
-
-if [ -f kubespray-offline-container.tar.gz ]; then
-    $NERDCTL load -i kubespray-offline-container.tar.gz
-fi
-
-popd
-
-LOCAL_REGISTRY=${LOCAL_REGISTRY:-"localhost:${REGISTRY_PORT}"}
 
 load_images() {
     for image in $BASEDIR/images/*.tar.gz; do
@@ -110,6 +51,56 @@ push_images() {
     done
 }
 
+###### Flow starts here ##########################
+
+# Create YUM repo and file server that will be exposed with nginx
+./setup-offline.sh
+./setup-py.sh
+
+# Get the deploy options
+for arg in "$@"
+do
+    if [ "$arg" == "--reset" ]; then
+        echo "Reset was requested"
+        RESET="yes"
+    elif [ "$arg" == "--skip-k8s-install" ]; then
+        echo "skip-k8s-install was requested"
+        SKIP_INSTALL="yes"
+    fi
+done
+
+# Check if registry is running and bring it up if not
+REGISRTY_RUNNNG=$(docker ps --quiet --filter name=docker_registry)
+if [[ -n ${REGISRTY_RUNNNG} ]]; then
+  echo "Registry is already running"
+else
+  # Dirty hack - if only I could use Ansible everywhere
+  source <(grep -v '^\s*\[.*\]\s*$' /etc/ansible/facts.d/registry.fact)
+  echo "ALEXP - $platform_dir"
+  pushd $platform_dir/manof
+  /usr/local/bin/manof run docker_registry --node-name $system_node_name --data-dir $docker_registry_path --storage-filesystem-maxthreads $registry_fs_maxthreads
+  popd
+fi
+
+
+# Not needed?
+#/usr/bin/docker rm -f nginx || true
+
+# Start nginx
+echo "===> Start nginx"
+/usr/bin/docker run -d \
+    --network host \
+    --restart always \
+    --name nginx \
+    -v ${BASEDIR}:/usr/share/nginx/html \
+    ${NGINX_IMAGE}
+
+# Install cni plugins
+echo "==> Install CNI plugins"
+mkdir -p /opt/cni/bin
+tar xvzf $(select_latest "${FILES_DIR}/kubernetes/cni/cni-plugins-linux-amd64-v*.tgz") -C /opt/cni/bin
+
+# TODO Move to Ansible and upload on all data nodes
 load_images
 push_images
 
