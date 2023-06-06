@@ -4,13 +4,34 @@
   gather_facts: false
   tasks:
 
-    - name: Find and kill any processes with "kube" in the name
-      command: pkill -f kube
+    - name: Ensure specific processes are killed
+      block:
+        - name: Kill leftover processes
+          command: pkill -f "{{ item }}"
+          register: pkill_result
+          ignore_errors: true
+          loop: ["kube", "flannel", "node-cache"]
+          until: pkill_result.rc == 0
+          retries: 5
+          delay: 2
+
+        - name: Verify process is terminated
+          command: pgrep -f "{{ item }}"
+          register: pgrep_result
+          failed_when: pgrep_result.rc == 0
+          loop: ["kube", "flannel", "node-cache"]
+
+    - name: Get network interfaces
+      shell: "ip -o -4 link show | awk -F: '/cali|flannel/ {print $2}'"
+      register: interfaces
+      changed_when: false
+
+    - name: Delete network interfaces
+      become: true
+      command: ip link delete {{ item }}
+      with_items: "{{ interfaces.stdout_lines }}"
       ignore_errors: true
 
-    - name: Find and kill "flanneld" process
-      command: pkill -f flanneld
-      ignore_errors: true
 
     - name: Check if "/etc/canal/certs/" directory exists
       stat:
@@ -22,4 +43,3 @@
         state: absent
         path: "/etc/canal/certs/"
       when: canal_certs_dir.stat.exists
-

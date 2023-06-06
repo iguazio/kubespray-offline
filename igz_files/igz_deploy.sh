@@ -106,6 +106,7 @@ push_images
 
 # Extract kubespray
 ./extract-kubespray.sh
+chown -R iguazio:iguazio $KUBESPRAY_DIR_NAME
 
 # Create and activate a venv
 /opt/rh/rh-python38/root/usr/bin/python -m venv venv/default
