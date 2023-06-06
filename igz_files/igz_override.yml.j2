@@ -3,7 +3,7 @@ kube_version: v1.24.10
 
 # These are filled by the igz_inventory_builder.py script
 igz_registry_host: "{{ igz_registry_host }}"
-igz_registry_port: 18009
+igz_registry_port: 8009
 supplementary_addresses_in_ssl_keys: [{{ supplementary_addresses_in_ssl_keys }}]
 # canal_iface: "{{ canal_iface if canal_iface else 'eth1' }}"
 {%  if apiserver_vip and 'domain_name' in apiserver_vip and 'ip_address' in apiserver_vip %}
@@ -23,7 +23,7 @@ calico_datastore: etcd
 kube_network_plugin: calico
 resolvconf_mode: docker_dns
 
-# Reservation for kube daemons 
+# Reservation for kube daemons
 kube_reserved: true
 kube_reserved_cgroups_for_service_slice: kube.slice
 kube_reserved_cgroups: "/{{ kube_reserved_cgroups_for_service_slice }}"

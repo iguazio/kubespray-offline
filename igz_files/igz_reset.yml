@@ -4,6 +4,31 @@
   gather_facts: false
   tasks:
 
+    - name: Clean up container leftovers
+      block:
+        - name: Start docker service
+          systemd:
+            name: docker
+            state: started
+            enabled: yes
+
+        - name: Gather service facts
+          service_facts:
+
+        - name: Fail if Docker is not running
+          fail:
+            msg: "Docker is not running! Manual intervention required!"
+          when: "services['docker.service'].state != 'running'"
+
+        - name: Remove all Docker containers
+          shell: "docker rm -f $(docker ps -aq)"
+          args:
+            executable: /bin/bash
+          register: docker_rm
+          when: "services['docker.service'].state == 'running'"
+          failed_when: "'requires at least 1 argument' not in docker_rm.stderr_lines"
+          ignore_errors: true
+
     - name: Ensure specific processes are killed
       block:
         - name: Kill leftover processes
@@ -22,16 +47,20 @@
           loop: ["kube", "flannel", "node-cache"]
 
     - name: Get network interfaces
-      shell: "ip -o -4 link show | awk -F: '/cali|flannel/ {print $2}'"
+      shell: "ip -o -4 link show | awk -F: '/cali|flannel/ {gsub(/@.*/, \"\", $2); print $2}'"
+#      shell: "ip -o -4 link show | awk -F: '/cali|flannel/ {print $2}'"
       register: interfaces
       changed_when: false
+
+    - name: ALEXP
+      debug:
+        msg: "{{ interfaces.stdout_lines }}"
 
     - name: Delete network interfaces
       become: true
       command: ip link delete {{ item }}
       with_items: "{{ interfaces.stdout_lines }}"
       ignore_errors: true
-
 
     - name: Check if "/etc/canal/certs/" directory exists
       stat:
@@ -43,3 +72,4 @@
         state: absent
         path: "/etc/canal/certs/"
       when: canal_certs_dir.stat.exists
+

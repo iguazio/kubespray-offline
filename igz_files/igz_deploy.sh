@@ -27,7 +27,7 @@ select_latest() {
 load_images() {
     for image in $BASEDIR/images/*.tar.gz; do
         echo "===> Loading $image"
-        sudo $NERDCTL load -i $image
+        $NERDCTL load -i $image
     done
 }
 
@@ -44,18 +44,14 @@ push_images() {
         newImage=${LOCAL_REGISTRY}/${newImage}
 
         echo "===> Tag ${image} -> ${newImage}"
-        sudo $NERDCTL tag ${image} ${newImage}
+        $NERDCTL tag ${image} ${newImage}
 
         echo "===> Push ${newImage}"
-        sudo $NERDCTL push ${newImage}
+        $NERDCTL push ${newImage}
     done
 }
 
 ###### Flow starts here ##########################
-
-# Create YUM repo and file server that will be exposed with nginx
-./setup-offline.sh
-./setup-py.sh
 
 # Get the deploy options
 for arg in "$@"
@@ -84,7 +80,7 @@ fi
 
 
 # Not needed?
-#/usr/bin/docker rm -f nginx || true
+/usr/bin/docker rm -f nginx || true
 
 # Start nginx
 echo "===> Start nginx"
@@ -94,6 +90,10 @@ echo "===> Start nginx"
     --name nginx \
     -v ${BASEDIR}:/usr/share/nginx/html \
     ${NGINX_IMAGE}
+
+# Create YUM repo and file server that will be exposed with nginx
+./setup-offline.sh
+./setup-py.sh
 
 # Install cni plugins
 echo "==> Install CNI plugins"
