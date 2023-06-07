@@ -27,7 +27,7 @@ else
   echo "[WARNING]: No patches provided for the current release ${KUBESPRAY_VERSION}!"
 fi
 
- Check pathes dir
+# Check pathes dir
 for file in "$PATCH_DIR"/*; do
   if [[ -f "$file" && "${file##*.}" != "patch" ]]; then
     echo "File $file does not have a .patch extension. Exiting."
