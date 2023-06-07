@@ -66,32 +66,24 @@ do
 done
 
 # Check if registry is running and bring it up if not
-REGISRTY_RUNNNG=$(docker ps --quiet --filter name=docker_registry)
+REGISRTY_RUNNNG=$($NERDCTL ps --quiet --filter name=docker_registry)
 if [[ -n ${REGISRTY_RUNNNG} ]]; then
   echo "Registry is already running"
 else
-  # Dirty hack - if only I could use Ansible everywhere
+  # Dirty hack - if only I could use Ansible everywhere (maybe in Rocky 8)
   source <(grep -v '^\s*\[.*\]\s*$' /etc/ansible/facts.d/registry.fact)
-  echo "ALEXP - $platform_dir"
   pushd $platform_dir/manof
   /usr/local/bin/manof run docker_registry --node-name $system_node_name --data-dir $docker_registry_path --storage-filesystem-maxthreads $registry_fs_maxthreads
   popd
 fi
 
-
-# Not needed?
-/usr/bin/docker rm -f nginx || true
-
 # Start nginx
 echo "===> Start nginx"
-/usr/bin/docker run -d \
-    --network host \
-    --restart always \
-    --name nginx \
-    -v ${BASEDIR}:/usr/share/nginx/html \
-    ${NGINX_IMAGE}
+$NERDCTL rm -f nginx || true
+$NERDCTL run -d --network host --restart always --name nginx -v ${BASEDIR}:/usr/share/nginx/html ${NGINX_IMAGE}
 
 # Create YUM repo and file server that will be exposed with nginx
+echo "==> Create YUM repo "
 ./setup-offline.sh
 ./setup-py.sh
 
@@ -100,25 +92,29 @@ echo "==> Install CNI plugins"
 mkdir -p /opt/cni/bin
 tar xvzf $(select_latest "${FILES_DIR}/kubernetes/cni/cni-plugins-linux-amd64-v*.tgz") -C /opt/cni/bin
 
-# TODO Move to Ansible and upload on all data nodes
+# TODO Rocky 8 -  Move to Ansible and upload on all data nodes
 load_images
 push_images
 
 # Extract kubespray
+echo "==> Untar Kubespray"
 ./extract-kubespray.sh
-chown -R iguazio:iguazio $KUBESPRAY_DIR_NAME
 
 # Create and activate a venv
+echo "==> Create venv"
 /opt/rh/rh-python38/root/usr/bin/python -m venv venv/default
 source venv/default/bin/activate
 
 # Install pip and requirements
+echo "==> Install pip and requirements"
 pip install -U pip
 pip install -r $KUBESPRAY_DIR_NAME/requirements.txt
 
 # Create inventory and copy Iguazio files
+echo "==> Build Iguazio inventory"
 python3 ./igz_inventory_builder.py "${@: -3}"
 
+echo "==> Copy Iguazio files"
 pushd ./$KUBESPRAY_DIR_NAME
 cp -r inventory/sample inventory/igz
 # Copy and rename file in one line
@@ -133,17 +129,22 @@ cp ../igz_post_install.yml .
 # Copy playbook for offline repo
 cp -r ../playbook .
 
+# The files in kubespray dir are owned by root and we don't like it
+chown -R iguazio:iguazio .
+
 # Run offline repo playbook
 ansible-playbook -i inventory/igz/igz_inventory.ini playbook/offline-repo.yml --become --extra-vars=@igz_override.yml
 
 # Reset Kubespray
 if [[ "${RESET}" == "yes" ]]; then
+  echo "==> Reset Kubernetes"
   ansible-playbook -i inventory/igz/igz_inventory.ini reset.yml --become --extra-vars=@igz_override.yml --extra-vars reset_confirmation=yes
   ansible-playbook -i inventory/igz/igz_inventory.ini igz_reset.yml --become --extra-vars=@igz_override.yml
 fi
 
 # Run kubespray
 if [[ "${SKIP_INSTALL}" == "no" ]]; then
+    echo "==> Install  Kubernetes"
     ansible-playbook -i inventory/igz/igz_inventory.ini cluster.yml --become --extra-vars=@igz_override.yml
     ansible-playbook -i inventory/igz/igz_inventory.ini igz_post_install.yml --become --extra-vars=@igz_override.yml
 fi
