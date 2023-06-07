@@ -20,9 +20,14 @@ PATCH_DIR=${CURRENT_DIR}/target-scripts/patches/${KUBESPRAY_VERSION}
 if [[ ! -d "${PATCH_DIR}" ]]; then
   mkdir -p ${PATCH_DIR}
 fi
-cp  ./igz_patches/${KUBESPRAY_VERSION}/* $PATCH_DIR/
 
-# Check pathes dir
+if [[ ! -d "./igz_patches/${KUBESPRAY_VERSION}" ]]; then
+  cp  ./igz_patches/${KUBESPRAY_VERSION}/* $PATCH_DIR/
+else
+  echo "[WARNING]: No patches provided for the current release ${KUBESPRAY_VERSION}!"
+fi
+
+ Check pathes dir
 for file in "$PATCH_DIR"/*; do
   if [[ -f "$file" && "${file##*.}" != "patch" ]]; then
     echo "File $file does not have a .patch extension. Exiting."
