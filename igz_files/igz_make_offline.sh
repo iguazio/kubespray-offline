@@ -28,18 +28,23 @@ else
 fi
 
 # Check pathes dir
+declare -a patches
+
 for file in "$PATCH_DIR"/*; do
   if [[ -f "$file" && "${file##*.}" != "patch" ]]; then
     echo "File $file does not have a .patch extension. Exiting."
     exit 1
-  else echo "Found patch file $file"
+  else
+    echo "Found patch file $file"
+    patches+=("$file")
   fi
 done
 
 # Apply all patches
-for patch in ${PATCH_DIR}/*.patch; do
-  echo "===> Apply patch $patch"
-  (cd $KUBESPRAY_DIR && patch --force --verbose -p1 < $patch) || exit 1
+for patch in "${patchArray[@]}"; do
+  pushd $KUBESPRAY_DIR
+  patch --force --verbose -p1 < $patch || exit 1
+  popd
 done
 
 # Continue with the flow
