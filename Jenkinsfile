@@ -36,6 +36,7 @@ node('centos76') {
     stage('upload to s3') {
         def bucket = 'iguazio-versions'
         def bucket_region = 'us-east-1'
+        def nas_image = "${nas_dir}/${output_name}"
         sh"""
         export LC_ALL=en_US.UTF-8
         export LANG=en_US.UTF-8
