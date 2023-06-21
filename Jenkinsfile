@@ -33,31 +33,18 @@ node('centos76') {
         sh "sudo rm -rf ${WORKSPACE}/${output_name}"
         }
     }
+    stage('upload to s3') {
+        def bucket = 'iguazio-versions'
+        def bucket_region = 'us-east-1'
+        sh"""
+        export LC_ALL=en_US.UTF-8
+        export LANG=en_US.UTF-8
+        """
+        common.upload_to_s3(bucket, bucket_region, nas_image, "${rel_dir}/${output_name}")
+    }
+   }
+  }
+ }
 
 
 
-//    def rel_dir = "build_by_hash/kubespray/${env.kubespray_hash}/pkg/kubespray"
-//    def nas_dir = "/mnt/nas/${rel_dir}"
-//    def output_name = 'kubespray.tar.xz'
-//    def nas_target = "${nas_dir}/${output_name}"
-//    stage('save to nas') {
-//            common.shell(['mkdir', '-p', nas_dir])
-//            "ls -ltrh /mnt/nas/kubespray_offline/${BRANCH_NAME}/"
-//            sh "cd /mnt/nas/kubespray_offline/${BRANCH_NAME}/ ; tar -cvf ${output_name} outputs"
-//            sh "cd /mnt/nas/kubespray_offline/${BRANCH_NAME}/ ; rm -rf  outputs"
-//            sh("mv /mnt/nas/kubespray_offline/${BRANCH_NAME}/${output_name}  ${nas_target}")
-//
-//    }
-
-//     stage('upload to s3') {
-//         def bucket = 'iguazio-versions'
-//         def bucket_region = 'us-east-1'
-//         sh"""
-//         export LC_ALL=en_US.UTF-8
-//         export LANG=en_US.UTF-8
-//         """
-//         common.upload_to_s3(bucket, bucket_region, nas_image, "${rel_dir}/${output_name}")
-//     }
-}
-}
-}
