@@ -40,7 +40,7 @@ common.main {
                     } finally {
                         // let's save time and bandwidth
                         common.shell(['docker', 'rm', '-f', docker_img_name])
-                        common.shell(['docker', 'rmi', docker_img_name])
+                        common.shell(['docker', 'rmi', '-f', docker_img_name])
                     }
                 }
             }
