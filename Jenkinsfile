@@ -25,13 +25,13 @@ common.main {
             }
 
             stage('build') {
-                dir('deployment') {
-                    writeFile(file: 'commit', text: env.zoo_hash)
-                    writeFile(file: 'branch_name', text: env.BRANCH_NAME)
-                    writeFile(file: 'build', text: env.BUILD_NUMBER)
-                    writeFile(file: 'version', text: version.iguazio_major_minor)
+                dir('./') {
+//                    writeFile(file: 'commit', text: env.zoo_hash)
+//                    writeFile(file: 'branch_name', text: env.BRANCH_NAME)
+//                    writeFile(file: 'build', text: env.BUILD_NUMBER)
+//                    writeFile(file: 'version', text: version.iguazio_major_minor)
 
-                    def docker_img_name = "devops/zoo_builder:${env.zoo_hash}"
+                    def docker_img_name = "devops/kubespray_builder:${env.zoo_hash}"
 
                     common.shell(['docker', 'build', '-t', docker_img_name, '.'])
 
@@ -40,9 +40,9 @@ common.main {
                                                         usernameVariable: 'artifactory_user',
                                                         passwordVariable: 'artifactory_password')]) {
 
-                            sh "docker run -v \$(pwd):/myansible --rm ${docker_img_name} \
-                                -i inventory/hosts plays/download_artifacts.yml \
-                                --extra-vars \"zoo_art_user=${env.artifactory_user} zoo_art_password=${env.artifactory_password}\""
+                            sh "docker run -v \$(pwd)/outputs:/outputs \
+                                            -v /var/run/docker.sock:/var/run/docker.sock
+                                            ${docker_img_name} || exit 1"
                         }
                     } finally {
                         // let's save time and bandwidth
