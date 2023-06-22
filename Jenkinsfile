@@ -1,4 +1,4 @@
-@Library('pipelinex@development') _
+@Library('pipelinex@integ_3.5') _
 
 def config = common.get_config()
 
