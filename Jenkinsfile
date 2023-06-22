@@ -36,9 +36,10 @@ common.main {
                     common.shell(['docker', 'build', '-t', docker_img_name, '.'])
 
                     try {
-                            sh "docker run -v \$(pwd)/outputs:/outputs -v /var/run/docker.sock:/var/run/docker.sock ${docker_img_name}"
+                            sh "docker run -v \$(pwd)/outputs:/outputs -v /var/run/docker.sock:/var/run/docker.sock ${docker_img_name} || exit 1"
                     } finally {
                         // let's save time and bandwidth
+                        common.shell(['docker', 'rm', '-f', docker_img_name])
                         common.shell(['docker', 'rmi', docker_img_name])
                     }
                 }
