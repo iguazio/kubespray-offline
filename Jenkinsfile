@@ -76,7 +76,7 @@ common.main {
                     'upload_to_s3': {
                         def bucket = 'iguazio-versions'
                         def bucket_region = 'us-east-1'
-                        upload_to_s3(bucket, bucket_region, 'deployment', "build_by_hash/kubespray/${env.kubespray_hash}/pkg/kubespray")
+                        upload_to_s3(bucket, bucket_region, 'outputs', "build_by_hash/kubespray/${env.kubespray_hash}/pkg/kubespray")
                     }
                 )
             }
