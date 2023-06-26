@@ -122,6 +122,24 @@
       when: '"upgrade_tool" not in item'
       with_items: "{{ docker_ps_output.stdout_lines }}"
 
+    - name: Find .original repos in /etc/yum.repos.d
+      find:
+        paths: "/etc/yum.repos.d/"
+        patterns: "*.original"
+      register: files_to_rename
+
+    - name: Restore repo names
+      command: mv "{{ item.path }}" "{{ item.path | regex_replace('.original$', '') }}"
+      with_items: "{{ files_to_rename.files }}"
+      become: true
+      when: files_to_rename.matched > 0
+
+    - name: Remove offline.repo if exists
+      file:
+        path: /etc/yum.repos.d/offline.repo
+        state: absent
+      become: true
+
 - hosts: localhost
   tasks:
     - name: Remove local PyP mirror
@@ -130,5 +148,3 @@
         state: absent
       become: true
 
-      
-     
