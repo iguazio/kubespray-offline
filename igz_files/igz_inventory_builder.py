@@ -1,5 +1,5 @@
 import yaml
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, meta, Undefined
 import os
 import argparse
 
@@ -172,6 +172,11 @@ class SysConfigProcessor:
            template_file (str): Path to the Jinja2 template file. Default is "igz_override.yml.j2".
            output_file (str): Path to the output INI file. Default is "igz_override.yml".
         """
+
+        class PreserveUndefined(Undefined):
+            def __str__(self):
+                return "{{" + self._undefined_name + "}}"
+
         template = SysConfigProcessor._get_template_file(template_file)
 
         igz_registry_host = self.data_nodes[0] if not self.data_vip else self.data_vip
@@ -191,7 +196,11 @@ class SysConfigProcessor:
 
     @staticmethod
     def _get_template_file(f):
-        env = Environment(loader=FileSystemLoader(os.path.dirname(f)), trim_blocks=True, lstrip_blocks=True)
+        class PreserveUndefined(Undefined):
+            def __str__(self):
+                return "{{" + self._undefined_name + "}}"
+        env = Environment(loader=FileSystemLoader(os.path.dirname(f)), trim_blocks=True, lstrip_blocks=True,
+                          undefined=PreserveUndefined)
         return env.get_template(os.path.basename(f))
 
     @staticmethod
