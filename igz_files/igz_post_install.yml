@@ -85,7 +85,16 @@
     - name: Restart containerd service
       systemd:
         name: containerd
-        state: restarted 
+        state: restarted
+
+    - name: Log uds plugin presence
+      stat:
+        path: /usr/libexec/kubernetes/kubelet-plugins/volume/exec/nodeagent~uds/uds
+      register: uds_result
+
+    - name: Print uds plugin presence
+      debug:
+        msg: "{{ 'WARNING! ' if not uds_result.stat.exists else '' }}The file '/usr/libexec/kubernetes/kubelet-plugins/volume/exec/nodeagent~uds/uds' is {{ 'not ' if not uds_result.stat.exists else '' }}found on the given path."
 
     - name: Pre-load bootstrap images with nerdctl
       shell:
