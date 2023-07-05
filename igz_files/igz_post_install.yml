@@ -121,3 +121,14 @@
       shell: docker rm -f {{ item }}
       when: '"upgrade_tool" not in item'
       with_items: "{{ docker_ps_output.stdout_lines }}"
+
+- hosts: localhost
+  tasks:
+    - name: Remove local PyP mirror
+      file:
+        path: /root/.config/pip
+        state: absent
+      become: true
+
+      
+     
