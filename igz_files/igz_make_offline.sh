@@ -61,6 +61,9 @@ echo " ===> Fetch Iguazio scripts"
 # Copy Iguazio files
 find . -path './proc' -prune -o -type f -name "igz_*" -exec cp {} /outputs/ \;
 
+# Set Kubespray version for deployment script
+echo "KUBESPRAY_VERSION=\${KUBESPRAY_VERSION:-${KUBESPRAY_VERSION}}" >> /outputs/igz_config.sh
+
 # This does not fall under any category
 echo " ===> Fetch nVidia patch"
 cp ./igz_patches/nvidia/config.toml.patch /outputs
