@@ -54,7 +54,7 @@ done
 ./download-kubespray-files.sh
 ./create-repo.sh
 ./copy-target-scripts.sh
-./download-additional-containers.sh
+#./download-additional-containers.sh
 
 echo " ===> Fetch Iguazio scripts"
 

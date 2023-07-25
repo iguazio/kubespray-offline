@@ -25,31 +25,47 @@ select_latest() {
 }
 
 load_images() {
-    for image in $BASEDIR/images/*.tar.gz; do
-        echo "===> Loading $image"
-        $NERDCTL load -i $image
+    # space delimited array of image files to exclude
+    excluded_images=("registry-2.8.1")
+    for image in $(ls $BASEDIR/images/*.tar.gz); do
+        # Check if the current image is in the excluded_images array
+        if [[ $image =~ $(IFS="|"; echo "${excluded_images[*]}") ]]; then
+            echo "===> Skipping $image"
+        else
+            echo "===> Loading $image"
+            $NERDCTL load -q -i $image
+        fi
     done
 }
 
 push_images() {
-    images=$(cat $BASEDIR/images/*.list)
-    for image in $images; do
+    # space delimited array of images to skip
+    excluded_images=("registry:2.8.1")
+    for image in $(cat $BASEDIR/images/*.list); do
+        # Check if the current image is in the excluded_images array
+        if [[ $image =~ $(IFS="|"; echo "${excluded_images[*]}") ]]; then
+            echo "===> Skipping $image"
+        else
+            # Removes specific repo parts from each image for kubespray
+            newImage=$image
+            for repo in registry.k8s.io k8s.gcr.io gcr.io docker.io quay.io; do
+                newImage=$(echo ${newImage} | sed "s@^${repo}/@@")
+            done
 
-        # Removes specific repo parts from each image for kubespray
-        newImage=$image
-        for repo in registry.k8s.io k8s.gcr.io gcr.io docker.io quay.io; do
-            newImage=$(echo ${newImage} | sed s@^${repo}/@@)
-        done
+            newImage=${LOCAL_REGISTRY}/${newImage}
 
-        newImage=${LOCAL_REGISTRY}/${newImage}
+            echo "===> Tag ${image} -> ${newImage}"
+            $NERDCTL tag ${image} ${newImage}
 
-        echo "===> Tag ${image} -> ${newImage}"
-        $NERDCTL tag ${image} ${newImage}
+            echo "===> Push ${newImage}"
+            $NERDCTL push ${newImage}
 
-        echo "===> Push ${newImage}"
-        $NERDCTL push ${newImage}
+            echo "===> Remove ${newImage}"
+            $NERDCTL rmi -f $(docker images -q -f "reference=${newImage}")
+        fi
     done
 }
+
 
 ###### Flow starts here ##########################
 
