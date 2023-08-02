@@ -12,6 +12,8 @@ BASEDIR=$(cd $BASEDIR; pwd)
 NGINX_IMAGE=iguazio/nginx_server:latest
 RESET="no"
 SKIP_INSTALL="no"
+SCALE_OUT="no"
+DEPLOYMENT_PLAYBOOK="cluster.yml"
 LOCAL_REGISTRY=${LOCAL_REGISTRY:-"localhost:${REGISTRY_PORT}"}
 
 # Helper functions ######################
@@ -78,8 +80,20 @@ do
     elif [ "$arg" == "--skip-k8s-install" ]; then
         echo "skip-k8s-install was requested"
         SKIP_INSTALL="yes"
+    elif [ "$arg" == "--scale" ]; then
+        echo "Scale out requested"
+        SCALE_OUT="yes"
+        DEPLOYMENT_PLAYBOOK="scale.yml"
     fi
 done
+
+# Verify deploy options
+if [ "$SCALE_OUT" == "yes" ]; then
+  RESET="no"
+  SKIP_INSTALL="no"
+fi
+
+echo "Nginx port is $NGINX_PORT"
 
 # Check if registry is running and bring it up if not
 REGISRTY_RUNNNG=$($NERDCTL ps --quiet --filter name=docker_registry)
@@ -95,8 +109,8 @@ fi
 
 # Start nginx
 echo "===> Start nginx"
-$NERDCTL rm -f nginx || true
-$NERDCTL run -d --network host --restart always --name nginx -v ${BASEDIR}:/usr/share/nginx/html ${NGINX_IMAGE}
+$NERDCTL rm -f kubespray_nginx || true
+$NERDCTL run -d -p 18080:80 --restart always --name kubespray_nginx -v ${BASEDIR}:/usr/share/nginx/html ${NGINX_IMAGE}
 
 # Create YUM repo and file server that will be exposed with nginx
 echo "==> Create YUM repo "
@@ -130,6 +144,9 @@ pip install -r $KUBESPRAY_DIR_NAME/requirements.txt
 echo "==> Build Iguazio inventory"
 python3 ./igz_inventory_builder.py "${@: -3}"
 
+# Don't stop containers in case of scale out - it's a live data node!
+echo -e "\n# Live system flag\nlive_system: true" >> igz_override.yml
+
 echo "==> Copy Iguazio files"
 pushd ./$KUBESPRAY_DIR_NAME
 cp -r inventory/sample inventory/igz
@@ -161,11 +178,14 @@ fi
 # Run kubespray
 if [[ "${SKIP_INSTALL}" == "no" ]]; then
     echo "==> Install  Kubernetes"
-    ansible-playbook -i inventory/igz/igz_inventory.ini cluster.yml --become --extra-vars=@igz_override.yml
+    ansible-playbook -i inventory/igz/igz_inventory.ini $DEPLOYMENT_PLAYBOOK --become --extra-vars=@igz_override.yml
     ansible-playbook -i inventory/igz/igz_inventory.ini igz_post_install.yml --become --extra-vars=@igz_override.yml
 fi
 
 popd
+
+#Remove kubespray_nginx container
+docker rm -f kubespray_nginx
 
 echo "<=== Kubespray deployed. Happy k8s'ing ===>"
 exit 0

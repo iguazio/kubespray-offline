@@ -174,7 +174,10 @@ class SysConfigProcessor:
         """
         template = SysConfigProcessor._get_template_file(template_file)
 
-        igz_registry_host = self.data_nodes[0] if not self.data_vip else self.data_vip
+        # Since kubespray images are pushed to 1st data node it is not correct to point the registry to VIP
+        # until we push them (and other binaries) symmetrically
+        # igz_registry_host = self.data_nodes[0] if not self.data_vip else self.data_vip
+        igz_registry_host = self.data_nodes[0]
         igz_registry_port = 8009
         external_ips = [node['external_ip_address'] for node in self.nodes if node['external_ip_address']]
         if self.vip:
