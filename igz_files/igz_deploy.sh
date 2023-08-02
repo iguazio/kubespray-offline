@@ -145,7 +145,11 @@ echo "==> Build Iguazio inventory"
 python3 ./igz_inventory_builder.py "${@: -3}"
 
 # Don't stop containers in case of scale out - it's a live data node!
-echo -e "\n# Live system flag\nlive_system: true" >> igz_override.yml
+if [ "$SCALE_OUT" == "yes" ]; then
+  echo -e "\n# Live system flag\nlive_system: true" >> igz_override.yml
+else
+  echo -e "\n# Live system flag\nlive_system: false" >> igz_override.yml
+fi
 
 echo "==> Copy Iguazio files"
 pushd ./$KUBESPRAY_DIR_NAME

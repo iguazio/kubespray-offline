@@ -82,11 +82,6 @@
       register: patch_result
       failed_when: patch_result.rc > 1
 
-    - name: Restart containerd service
-      systemd:
-        name: containerd
-        state: restarted 
-
     - name: Pre-load bootstrap images with nerdctl
       shell:
         /usr/local/bin/nerdctl load -i {{ ansible_local.registry.kompton.temp_dir }}/bootstrap_apps.tar.gz
@@ -111,15 +106,26 @@
             - "docker-registry.iguazio-platform.app."
             - "docker-registry.default-tenant.app."
 
+    - name: Restart containerd service
+      systemd:
+        name: containerd
+        state: restarted
+        daemon_reload: true
+
 - hosts: k8s_clients
   tasks:
+    - name: Stop kubespray_nginx uncinditionally
+      shell: docker rm -f kubespray_nginx
+
     - name: Get names of all running Docker containers
       shell: "{% raw %}docker ps --format '{{.Names}}'{% endraw %}"
       register: docker_ps_output
 
     - name: Stop and remove Docker containers (but not upgrade_tool)
       shell: docker rm -f {{ item }}
-      when: '"upgrade_tool" not in item'
+      when:
+        - '"upgrade_tool" not in item'
+        - not live_system
       with_items: "{{ docker_ps_output.stdout_lines }}"
 
     - name: Find .original repos in /etc/yum.repos.d
