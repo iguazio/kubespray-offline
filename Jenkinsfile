@@ -3,7 +3,6 @@
 def upload_to_s3_generic(aws_auth_id, bucket, bucket_region, source, dest, follow_sym_links = false) {
     withEnv(["AWS_DEFAULT_REGION=${bucket_region}"]) {
         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: aws_auth_id]]) {
-            common.shell(['echo', '"Hello AlexP"'])
             common.shell(['virtualenv', '-p', 'python3', 'venv'])
             common.shell(['source', 'venv/bin/activate'])
             common.shell(['python', '-V'])
