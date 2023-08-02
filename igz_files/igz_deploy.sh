@@ -188,8 +188,5 @@ fi
 
 popd
 
-#Remove kubespray_nginx container
-docker rm -f kubespray_nginx
-
 echo "<=== Kubespray deployed. Happy k8s'ing ===>"
 exit 0
