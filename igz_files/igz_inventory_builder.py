@@ -1,5 +1,5 @@
 import yaml
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, DebugUndefined
 import os
 import argparse
 
@@ -192,9 +192,26 @@ class SysConfigProcessor:
 
         SysConfigProcessor._write_template(output_file, rendered_template)
 
+    def generate_offline(self, template_file="./igz_offline.yml.j2", output_file="igz_offline.yml"):
+        """
+        Generates YAML file using a Jinja2 template, populated with the extracted
+        node and cluster information. The YAML file is saved to the current directory.
+
+        Args:
+           template_file (str): Path to the Jinja2 template file. Default is "igz_override.yml.j2".
+           output_file (str): Path to the output INI file. Default is "igz_override.yml".
+        """
+        template = SysConfigProcessor._get_template_file(template_file)
+        system_fqdn = '.'.join([self.system_id, self.domain])
+
+        rendered_template = template.render(system_fqdn=system_fqdn)
+
+        SysConfigProcessor._write_template(output_file, rendered_template)
+
     @staticmethod
     def _get_template_file(f):
-        env = Environment(loader=FileSystemLoader(os.path.dirname(f)), trim_blocks=True, lstrip_blocks=True)
+        env = Environment(loader=FileSystemLoader(os.path.dirname(f)), trim_blocks=True, lstrip_blocks=True,
+                          undefined=DebugUndefined)
         return env.get_template(os.path.basename(f))
 
     @staticmethod
@@ -222,8 +239,10 @@ def main_flow():
     config_processor = SysConfigProcessor(system_config)
     config_processor.username = username
     config_processor.password = password
+
     config_processor.generate_inventory()
     config_processor.generate_overrides()
+    config_processor.generate_offline()
 
 
 if __name__ == "__main__":
