@@ -82,35 +82,15 @@
       register: patch_result
       failed_when: patch_result.rc > 1
 
-    - name: Pre-load bootstrap images with nerdctl
-      shell:
-        /usr/local/bin/nerdctl load -i {{ ansible_local.registry.kompton.temp_dir }}/bootstrap_apps.tar.gz
-
-    - name: Configure insecure registries
-      block:
-        - name: Create directory
-          file:
-            path: "/etc/containerd/certs.d/{{ item }}{{ system_fqdn }}:80"
-            state: directory
-          loop:
-            - "datanode-registry.iguazio-platform.app."
-            - "docker-registry.iguazio-platform.app."
-            - "docker-registry.default-tenant.app."
-
-        - name: Create hosts.toml from template
-          template:
-            src: igz_hosts.toml.j2
-            dest: "/etc/containerd/certs.d/{{ item }}{{ system_fqdn }}:80/hosts.toml"
-          loop:
-            - "datanode-registry.iguazio-platform.app."
-            - "docker-registry.iguazio-platform.app."
-            - "docker-registry.default-tenant.app."
-
     - name: Restart containerd service
       systemd:
         name: containerd
         state: restarted
         daemon_reload: true
+
+    - name: Pre-load bootstrap images with nerdctl
+      shell:
+        /usr/local/bin/nerdctl load -i {{ ansible_local.registry.kompton.temp_dir }}/bootstrap_apps.tar.gz
 
 - hosts: k8s_clients
   tasks:
