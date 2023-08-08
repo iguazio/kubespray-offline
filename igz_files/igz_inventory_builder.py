@@ -1,5 +1,5 @@
 import yaml
-from jinja2 import Environment, FileSystemLoader, DebugUndefined
+from jinja2 import Environment, FileSystemLoader
 import os
 import argparse
 
@@ -192,7 +192,7 @@ class SysConfigProcessor:
 
         SysConfigProcessor._write_template(output_file, rendered_template)
 
-    def generate_offline(self, template_file="./igz_offline.yml.j2", output_file="igz_offline.yml"):
+    def generate_offline(self, template_file='igz_offline.yml.j2', output_file="igz_offline.yml"):
         """
         Generates YAML file using a Jinja2 template, populated with the extracted
         node and cluster information. The YAML file is saved to the current directory.
@@ -201,17 +201,42 @@ class SysConfigProcessor:
            template_file (str): Path to the Jinja2 template file. Default is "igz_override.yml.j2".
            output_file (str): Path to the output INI file. Default is "igz_override.yml".
         """
-        template = SysConfigProcessor._get_template_file(template_file)
-        system_fqdn = '.'.join([self.system_id, self.domain])
 
-        rendered_template = template.render(system_fqdn=system_fqdn)
+        # Define the specific section
+        insecure_registries = '''
+        containerd_insecure_registries:
+          "data_node_registry": "http://{{ registry_host }}"
+          "datanode-registry.iguazio-platform.app.{{ system_fqdn }}:80": "http://datanode-registry.iguazio-platform.app.{{ system_fqdn }}:80"
+          "docker-registry.iguazio-platform.app.{{ system_fqdn }}:80": "http://docker-registry.iguazio-platform.app.{{ system_fqdn }}:80"
+          "docker-registry.default-tenant.app.{{ system_fqdn }}:80": "http://docker-registry.default-tenant.app.{{ system_fqdn }}:80"
+        '''
 
-        SysConfigProcessor._write_template(output_file, rendered_template)
+        # Render the specific section
+        env = Environment()
+        insecure_registries_template = env.from_string(insecure_registries)
+        rendered_insecure_registries = insecure_registries_template.render(
+            registry_host= self.data_nodes[0],
+            system_fqdn='.'.join([self.system_id, self.domain])
+        )
+
+        # Parse the rendered section as YAML
+        insecure_registries_yaml = yaml.safe_load(rendered_insecure_registries)
+
+        # Load the main YAML file
+        with open(template_file, 'r') as file:
+            main_yaml_data = yaml.safe_load(file)
+
+        # Merge the specific section into the main YAML data
+        main_yaml_data.update(insecure_registries_yaml)
+
+        # Write the merged content back to the YAML file
+        with open(output_file, 'w') as file:
+            # noinspection PyTypeChecker
+            yaml.safe_dump(main_yaml_data, file, width=float("inf"))
 
     @staticmethod
     def _get_template_file(f):
-        env = Environment(loader=FileSystemLoader(os.path.dirname(f)), trim_blocks=True, lstrip_blocks=True,
-                          undefined=DebugUndefined)
+        env = Environment(loader=FileSystemLoader(os.path.dirname(f)), trim_blocks=True, lstrip_blocks=True)
         return env.get_template(os.path.basename(f))
 
     @staticmethod
