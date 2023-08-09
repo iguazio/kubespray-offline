@@ -94,7 +94,7 @@
 
 - hosts: k8s_clients
   tasks:
-    - name: Stop kubespray_nginx uncinditionally
+    - name: Stop kubespray_nginx unconditionally
       shell: docker rm -f kubespray_nginx
 
     - name: Get names of all running Docker containers
