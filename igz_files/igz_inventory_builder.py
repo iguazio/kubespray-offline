@@ -174,7 +174,10 @@ class SysConfigProcessor:
         """
         template = SysConfigProcessor._get_template_file(template_file)
 
-        igz_registry_host = self.data_nodes[0] if not self.data_vip else self.data_vip
+        # Since kubespray images are pushed to 1st data node it is not correct to point the registry to VIP
+        # until we push them (and other binaries) symmetrically
+        # igz_registry_host = self.data_nodes[0] if not self.data_vip else self.data_vip
+        igz_registry_host = self.data_nodes[0]
         igz_registry_port = 8009
         external_ips = [node['external_ip_address'] for node in self.nodes if node['external_ip_address']]
         if self.vip:
@@ -188,6 +191,48 @@ class SysConfigProcessor:
                                             canal_iface=canal_iface, apiserver_vip=self.vip, system_fqdn=system_fqdn)
 
         SysConfigProcessor._write_template(output_file, rendered_template)
+
+    def generate_offline(self, template_file='igz_offline.yml.j2', output_file="igz_offline.yml"):
+        """
+        Generates YAML file using a Jinja2 template, populated with the extracted
+        node and cluster information. The YAML file is saved to the current directory.
+
+        Args:
+           template_file (str): Path to the Jinja2 template file. Default is "igz_override.yml.j2".
+           output_file (str): Path to the output INI file. Default is "igz_override.yml".
+        """
+
+        # Define the specific section
+        insecure_registries = '''
+        containerd_insecure_registries:
+          "data_node_registry": "http://{{ registry_host }}"
+          "datanode-registry.iguazio-platform.app.{{ system_fqdn }}:80": "http://datanode-registry.iguazio-platform.app.{{ system_fqdn }}:80"
+          "docker-registry.iguazio-platform.app.{{ system_fqdn }}:80": "http://docker-registry.iguazio-platform.app.{{ system_fqdn }}:80"
+          "docker-registry.default-tenant.app.{{ system_fqdn }}:80": "http://docker-registry.default-tenant.app.{{ system_fqdn }}:80"
+        '''
+
+        # Render the specific section
+        env = Environment()
+        insecure_registries_template = env.from_string(insecure_registries)
+        rendered_insecure_registries = insecure_registries_template.render(
+            registry_host= self.data_nodes[0],
+            system_fqdn='.'.join([self.system_id, self.domain])
+        )
+
+        # Parse the rendered section as YAML
+        insecure_registries_yaml = yaml.safe_load(rendered_insecure_registries)
+
+        # Load the main YAML file
+        with open(template_file, 'r') as file:
+            main_yaml_data = yaml.safe_load(file)
+
+        # Merge the specific section into the main YAML data
+        main_yaml_data.update(insecure_registries_yaml)
+
+        # Write the merged content back to the YAML file
+        with open(output_file, 'w') as file:
+            # noinspection PyTypeChecker
+            yaml.safe_dump(main_yaml_data, file, width=float("inf"))
 
     @staticmethod
     def _get_template_file(f):
@@ -219,8 +264,10 @@ def main_flow():
     config_processor = SysConfigProcessor(system_config)
     config_processor.username = username
     config_processor.password = password
+
     config_processor.generate_inventory()
     config_processor.generate_overrides()
+    config_processor.generate_offline()
 
 
 if __name__ == "__main__":
