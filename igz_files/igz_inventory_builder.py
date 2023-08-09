@@ -198,8 +198,8 @@ class SysConfigProcessor:
         node and cluster information. The YAML file is saved to the current directory.
 
         Args:
-           template_file (str): Path to the Jinja2 template file. Default is "igz_override.yml.j2".
-           output_file (str): Path to the output INI file. Default is "igz_override.yml".
+           template_file (str): Path to the Jinja2 template file. Default is "igz_offline.yml.j2".
+           output_file (str): Path to the output INI file. Default is "igz_offline.yml".
         """
 
         # Define the specific section
@@ -207,6 +207,7 @@ class SysConfigProcessor:
         containerd_insecure_registries:
           "data_node_registry": "http://{{ registry_host }}"
           "datanode-registry.iguazio-platform.app.{{ system_fqdn }}:80": "http://datanode-registry.iguazio-platform.app.{{ system_fqdn }}:80"
+          "datanode-registry.iguazio-platform.data.{{ system_fqdn }}:8009": "http://datanode-registry.iguazio-platform.data.{{ system_fqdn }}:8009"
           "docker-registry.iguazio-platform.app.{{ system_fqdn }}:80": "http://docker-registry.iguazio-platform.app.{{ system_fqdn }}:80"
           "docker-registry.default-tenant.app.{{ system_fqdn }}:80": "http://docker-registry.default-tenant.app.{{ system_fqdn }}:80"
         '''
@@ -215,7 +216,7 @@ class SysConfigProcessor:
         env = Environment()
         insecure_registries_template = env.from_string(insecure_registries)
         rendered_insecure_registries = insecure_registries_template.render(
-            registry_host= self.data_nodes[0],
+            registry_host=self.data_nodes[0],
             system_fqdn='.'.join([self.system_id, self.domain])
         )
 
