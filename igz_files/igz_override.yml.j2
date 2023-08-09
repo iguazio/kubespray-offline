@@ -4,8 +4,8 @@ kube_version: v1.26.5
 # These are filled by the igz_inventory_builder.py script
 igz_registry_host: "{{ igz_registry_host }}"
 igz_registry_port: 8009
+kubespray_nginx_port: 18080
 supplementary_addresses_in_ssl_keys: [{{ supplementary_addresses_in_ssl_keys }}]
-# canal_iface: "{{ canal_iface if canal_iface else 'eth1' }}"
 {%  if apiserver_vip and 'domain_name' in apiserver_vip and 'ip_address' in apiserver_vip %}
 apiserver_loadbalancer_domain_name: "{{ apiserver_vip['domain_name'] }}"
 loadbalancer_apiserver:
