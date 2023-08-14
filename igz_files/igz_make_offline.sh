@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Exit on any error
-set -ex
+set -e
 . config.sh
 
 CURRENT_DIR=$(pwd)
