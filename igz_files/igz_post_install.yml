@@ -94,6 +94,7 @@
 
 - hosts: k8s_clients
   tasks:
+    - name: Get names of all running Docker containers
       shell: "{% raw %}docker ps --format '{{.Names}}'{% endraw %}"
       register: docker_ps_output
 
