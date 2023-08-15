@@ -94,9 +94,6 @@
 
 - hosts: k8s_clients
   tasks:
-    - name: Stop kubespray_nginx unconditionally
-      shell: docker rm -f kubespray_nginx
-
     - name: Get names of all running Docker containers
       shell: "{% raw %}docker ps --format '{{.Names}}'{% endraw %}"
       register: docker_ps_output
@@ -105,7 +102,7 @@
       shell: docker rm -f {{ item }}
       when:
         - '"upgrade_tool" not in item'
-        - not live_system
+        - item == "kubespray_nginx" or not live_system
       with_items: "{{ docker_ps_output.stdout_lines }}"
 
     - name: Find .original repos in /etc/yum.repos.d
