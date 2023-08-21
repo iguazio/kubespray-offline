@@ -59,7 +59,8 @@ done
 echo " ===> Fetch Iguazio scripts"
 
 # Copy Iguazio files
-find . -path './proc' -prune -o -type f -name "igz_*" -exec cp {} /outputs/ \;
+#find . -path './proc' -prune -o -type f -name "igz_*" -exec cp {} /outputs/ \;
+cp -r igz_files/* outputs/
 
 # Set Kubespray version for deployment script
 echo "KUBESPRAY_VERSION=\${KUBESPRAY_VERSION:-${KUBESPRAY_VERSION}}" >> /outputs/igz_config.sh

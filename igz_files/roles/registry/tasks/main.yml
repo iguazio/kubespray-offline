@@ -1,0 +1,61 @@
+- name: Set some facts
+  set_fact:
+    local_registry: "ilocalhost:{{ igz_registry_port }}"
+
+- name: Check if "docker_registry" container is running
+  shell: docker ps --filter "name=docker_registry" --format "{{ '{{.Names}}' }}"
+  register: registry_running
+  changed_when: false
+
+- name: Bring up registry (if not running)
+  shell: |
+    /usr/local/bin/manof run docker_registry \
+    --node-name {{ ansible_local.registry.kompton.system_node_name }}
+    --data-dir {{ ansible_local.registry.kompton.docker_registry_path }}
+    --storage-filesystem-maxthreads {{ ansible_local.registry.kompton.registry_fs_maxthreads }}
+  args:
+    chdir: "{{ ansible_local.registry.kompton.platform_dir }}/manof"
+  when: not registry_running.stdout
+
+- name: Load Docker images, excluding the ones in the excluded_images list
+  command: docker load -i "{{ item }}"
+  with_fileglob:
+    - "{{ docker_images_dir }}/*.tar.gz"
+  when: item | basename | regex_replace('\\.tar', '') not in excluded_images
+  register: docker_load_result
+
+  vars:
+    basedir: ""
+    local_registry: "local-registry-address"
+    nerdctl: "/path/to/nerdctl"
+    excluded_images:
+      - "registry:2.8.1"
+    repos_to_remove:
+      - "registry.k8s.io"
+      - "k8s.gcr.io"
+      - "gcr.io"
+      - "docker.io"
+      - "quay.io"
+
+- name: Read image list files
+  command: cat "{{ basei_dir }}/images/{{ item }}"
+  with_fileglob:
+    - "{{ basedir }}/images/*.list"
+  register: image_files
+  changed_when: false
+
+- name: Process images
+  block:
+    - set_fact:
+        new_image: "{{ item | regex_replace('^(' + repos_to_remove|join('|') + ')/', '') | replace(item, local_registry + '/' + item) }}"
+
+    - name: Tag image
+      command: "docker tag {{ item }} {{ new_image }}"
+
+    - name: Push image
+      command: "docker push {{ new_image }}"
+
+    - name: Remove image
+      shell: "docker rmi -f $(docker images -q -f \"reference={{ new_image }}\")"
+  loop: "{{ image_files.results | map(attribute='stdout_lines') | list | flatten }}"
+  when: item not in excluded_images

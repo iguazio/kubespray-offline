@@ -1,7 +1,18 @@
-import yaml
-from jinja2 import Environment, FileSystemLoader
 import os
+import yaml
 import argparse
+import subprocess
+from jinja2 import Environment, FileSystemLoader
+
+
+class CmdRunner:
+    def __init__(self, sudo_pass):
+        self.sudo_pass = sudo_pass
+
+    def run_with_sudo(self, cmd):
+        process = subprocess.Popen(['sudo', '-S', cmd], stdin=subprocess.PIPE, stderr=subprocess.PIPE,
+                                   universal_newlines=True)
+        process.communicate(self.sudo_pass + '\n')
 
 
 class SysConfigProcessor:
@@ -45,6 +56,7 @@ class SysConfigProcessor:
         self.system_id = ''
         self.domain = ''
         self.data_vip = ''
+        self.current_directory = os.getcwd()
 
         with open(self.yaml_file, 'r') as file:
             self.config = yaml.safe_load(file)
@@ -185,10 +197,12 @@ class SysConfigProcessor:
         supplementary_addresses_in_ssl_keys = ','.join(external_ips)
         canal_iface = self.canal_iface
         system_fqdn = '.'.join([self.system_id, self.domain])
+        base_dir = self.current_directory
 
         rendered_template = template.render(igz_registry_host=igz_registry_host, igz_registry_port=igz_registry_port,
                                             supplementary_addresses_in_ssl_keys=supplementary_addresses_in_ssl_keys,
-                                            canal_iface=canal_iface, apiserver_vip=self.vip, system_fqdn=system_fqdn)
+                                            canal_iface=canal_iface, apiserver_vip=self.vip, system_fqdn=system_fqdn,
+                                            base_dir=base_dir)
 
         SysConfigProcessor._write_template(output_file, rendered_template)
 
@@ -269,6 +283,10 @@ def main_flow():
     config_processor.generate_inventory()
     config_processor.generate_overrides()
     config_processor.generate_offline()
+
+    cmd_runner = CmdRunner(args.password)
+    command = "ansible-playbook -i kubespray-2.22.1/inventory/igz/igz_inventory.ini igz_deploy.yml"
+    cmd_runner.run_with_sudo(command)
 
 
 if __name__ == "__main__":
