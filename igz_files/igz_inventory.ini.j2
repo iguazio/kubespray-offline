@@ -10,6 +10,9 @@ k8s-node{{ loop.index }} ansible_host={{ node.mgmt_ip_address }} ansible_user={{
 {% endif %}
 {% endfor %}
 
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3.6
+
 [kube_control_plane]
 {% if app_nodes|length < 3 %}
 k8s-node1
@@ -32,9 +35,6 @@ k8s-node{{ loop.index }}
 {% for node in app_nodes %}
 k8s-node{{ loop.index }}
 {% endfor %}
-
-[kube_node:vars]
-ansible_python_interpreter=/usr/bin/python3.6
 
 [k8s_cluster:children]
 kube_control_plane

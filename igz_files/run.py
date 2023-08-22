@@ -1,18 +1,26 @@
+#!/usr/bin/env python
+
 import os
+import sys
 import yaml
+import shlex
 import argparse
 import subprocess
 from jinja2 import Environment, FileSystemLoader
 
 
 class CmdRunner:
-    def __init__(self, sudo_pass):
+    def __init__(self, sudo_pass=None):
         self.sudo_pass = sudo_pass
 
-    def run_with_sudo(self, cmd):
-        process = subprocess.Popen(['sudo', '-S', cmd], stdin=subprocess.PIPE, stderr=subprocess.PIPE,
-                                   universal_newlines=True)
-        process.communicate(self.sudo_pass + '\n')
+    def run(self, cmd, sudo=False):
+        cmd_args = shlex.split(cmd)
+        print(f"Running command: {cmd_args}")
+        if sudo and self.sudo_pass:
+            command_line = "echo '{}' | sudo -S {}".format(self.sudo_pass, cmd)
+            subprocess.check_call(command_line, shell=True)
+        else:
+            subprocess.check_call(cmd_args)
 
 
 class SysConfigProcessor:
@@ -273,6 +281,10 @@ def main_flow():
     Reads the arguments from CLI and generates the required files from the templates
     """
     args = _parse_cli()
+
+    script_directory = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(script_directory)
+
     system_config = args.system_config
     username = args.user
     password = args.password
@@ -285,8 +297,8 @@ def main_flow():
     config_processor.generate_offline()
 
     cmd_runner = CmdRunner(args.password)
-    command = "ansible-playbook -i kubespray-2.22.1/inventory/igz/igz_inventory.ini igz_deploy.yml"
-    cmd_runner.run_with_sudo(command)
+    command = "ansible-playbook -i igz_inventory.ini igz_deploy.yml --become --extra-vars=@igz_override.yml"
+    cmd_runner.run(command)
 
 
 if __name__ == "__main__":
