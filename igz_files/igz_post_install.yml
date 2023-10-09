@@ -46,6 +46,12 @@
       when: ansible_os_family in ['Debian', 'Ubuntu', 'RedHat']
       become: yes
 
+    - name: Remove offline.repo if exists
+      file:
+        path: /etc/yum.repos.d/offline.repo
+        state: absent
+      become: true
+
 - hosts: k8s_cluster
   become: true
   tasks:
@@ -116,12 +122,6 @@
       with_items: "{{ files_to_rename.files }}"
       become: true
       when: files_to_rename.matched > 0
-
-    - name: Remove offline.repo if exists
-      file:
-        path: /etc/yum.repos.d/offline.repo
-        state: absent
-      become: true
 
 - hosts: localhost
   tasks:
