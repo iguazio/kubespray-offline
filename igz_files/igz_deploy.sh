@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Exit on any error
-set -e
+set -ex
 # Override configs to avoid replacing the script multiple times
 cat ./igz_config.sh > ./config.sh && . ./config.sh
 
@@ -43,27 +43,46 @@ load_images() {
 push_images() {
     # space delimited array of images to skip
     excluded_images=("registry:2.8.1")
-    for image in $(cat $BASEDIR/images/*.list); do
+    for image in $(find $BASEDIR/images -maxdepth 1 -type f -name "*.tar.gz"  -printf "%f\n"); do
         # Check if the current image is in the excluded_images array
         if [[ $image =~ $(IFS="|"; echo "${excluded_images[*]}") ]]; then
             echo "===> Skipping $image"
         else
+            LOCAL_REGISTRY="$registry_ip:${REGISTRY_PORT}"
+
             # Removes specific repo parts from each image for kubespray
             newImage=$image
             for repo in registry.k8s.io k8s.gcr.io gcr.io docker.io quay.io; do
-                newImage=$(echo ${newImage} | sed "s@^${repo}/@@")
+                newImage=$(echo ${newImage} | sed "s@^${repo}_@@")
+		echo "ALEXP: ${newImage}"
             done
 
-            newImage=${LOCAL_REGISTRY}/${newImage}
 
-            echo "===> Tag ${image} -> ${newImage}"
-            $NERDCTL tag ${image} ${newImage}
+
+            newImage=${newImage##*/}
+	    # Replace all _ with /
+            newImage=${newImage//_//}
+
+            # Replace the last - with :
+            prefix=${newImage%-*}
+            suffix=${newImage##*-}
+            newImage="$prefix:$suffix"
+	    newImage=${newImage%.tar.gz}
+
+            newImage=${LOCAL_REGISTRY}/${newImage}
+            #echo "===> Tag ${image} -> ${newImage}"
+            #$NERDCTL tag ${image} ${newImage}
 
             echo "===> Push ${newImage}"
-            $NERDCTL push ${newImage}
+            docker run --rm \
+		    -v $BASEDIR/images/:/tmp \
+		    ${skopeo_image} copy --dest-no-creds --dest-tls-verify=false \
+		    ${source_type}:/tmp/${image} \
+	            docker://${newImage}
+            #$NERDCTL push ${newImage}
 
-            echo "===> Remove ${newImage}"
-            $NERDCTL rmi -f $(docker images -q -f "reference=${newImage}")
+            #echo "===> Remove ${newImage}"
+            #$NERDCTL rmi -f $(docker images -q -f "reference=${newImage}")
         fi
     done
 }
@@ -87,6 +106,10 @@ do
     fi
 done
 
+# Read kompton facts
+# Dirty hack - if only I could use Ansible everywhere (maybe in Rocky 8)
+source <(grep -v '^\s*\[.*\]\s*$' /etc/ansible/facts.d/registry.fact)
+
 # Verify deploy options
 if [ "$SCALE_OUT" == "yes" ]; then
   RESET="no"
@@ -100,8 +123,6 @@ REGISRTY_RUNNNG=$($NERDCTL ps --quiet --filter name=docker_registry)
 if [[ -n ${REGISRTY_RUNNNG} ]]; then
   echo "Registry is already running"
 else
-  # Dirty hack - if only I could use Ansible everywhere (maybe in Rocky 8)
-  source <(grep -v '^\s*\[.*\]\s*$' /etc/ansible/facts.d/registry.fact)
   pushd $platform_dir/manof
   /usr/local/bin/manof run docker_registry --node-name $system_node_name --data-dir $docker_registry_path --storage-filesystem-maxthreads $registry_fs_maxthreads
   popd
@@ -123,7 +144,7 @@ mkdir -p /opt/cni/bin
 tar xvzf $(select_latest "${FILES_DIR}/kubernetes/cni/cni-plugins-linux-amd64-v*.tgz") -C /opt/cni/bin
 
 # TODO Rocky 8 -  Move to Ansible and upload on all data nodes
-load_images
+#load_images
 push_images
 
 # Extract kubespray
