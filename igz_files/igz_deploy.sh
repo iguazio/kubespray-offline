@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Exit on any error
-set -ex
+set -e
 # Override configs to avoid replacing the script multiple times
 cat ./igz_config.sh > ./config.sh && . ./config.sh
 
@@ -57,9 +57,8 @@ push_images() {
 		echo "ALEXP: ${newImage}"
             done
 
-
-
             newImage=${newImage##*/}
+
 	    # Replace all _ with /
             newImage=${newImage//_//}
 
@@ -70,8 +69,6 @@ push_images() {
 	    newImage=${newImage%.tar.gz}
 
             newImage=${LOCAL_REGISTRY}/${newImage}
-            #echo "===> Tag ${image} -> ${newImage}"
-            #$NERDCTL tag ${image} ${newImage}
 
             echo "===> Push ${newImage}"
             docker run --rm \
@@ -79,10 +76,6 @@ push_images() {
 		    ${skopeo_image} copy --dest-no-creds --dest-tls-verify=false \
 		    ${source_type}:/tmp/${image} \
 	            docker://${newImage}
-            #$NERDCTL push ${newImage}
-
-            #echo "===> Remove ${newImage}"
-            #$NERDCTL rmi -f $(docker images -q -f "reference=${newImage}")
         fi
     done
 }
