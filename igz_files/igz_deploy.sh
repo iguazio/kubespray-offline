@@ -14,7 +14,6 @@ RESET="no"
 SKIP_INSTALL="no"
 SCALE_OUT="no"
 DEPLOYMENT_PLAYBOOK="cluster.yml"
-LOCAL_REGISTRY=${LOCAL_REGISTRY:-"localhost:${REGISTRY_PORT}"}
 
 # Helper functions ######################
 select_latest() {
@@ -24,20 +23,6 @@ select_latest() {
         exit 1
     fi
     echo $latest
-}
-
-load_images() {
-    # space delimited array of image files to exclude
-    excluded_images=("registry-2.8.1")
-    for image in $(ls $BASEDIR/images/*.tar.gz); do
-        # Check if the current image is in the excluded_images array
-        if [[ $image =~ $(IFS="|"; echo "${excluded_images[*]}") ]]; then
-            echo "===> Skipping $image"
-        else
-            echo "===> Loading $image"
-            $NERDCTL load -q -i $image
-        fi
-    done
 }
 
 push_images() {
@@ -54,9 +39,8 @@ push_images() {
             newImage=$image
             for repo in registry.k8s.io k8s.gcr.io gcr.io docker.io quay.io; do
                 newImage=$(echo ${newImage} | sed "s@^${repo}_@@")
-		echo "ALEXP: ${newImage}"
             done
-
+            # Bash magiv - courtesy of ChatGPT 4
             newImage=${newImage##*/}
 
 	    # Replace all _ with /
@@ -101,6 +85,7 @@ done
 
 # Read kompton facts
 # Dirty hack - if only I could use Ansible everywhere (maybe in Rocky 8)
+# This regex removes all lines that start and end with [], i.e. removes section names in INI file
 source <(grep -v '^\s*\[.*\]\s*$' /etc/ansible/facts.d/registry.fact)
 
 # Verify deploy options
