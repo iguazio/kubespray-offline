@@ -1,0 +1,36 @@
+- hosts: k8s_clients
+  tasks:
+    - name: Check if datanode registry is running
+      shell: docker ps --quiet --filter name=docker_registry
+      register: registry_is_running
+
+    - name: Start docker registry if needed
+      shell: |
+        /usr/local/bin/manof run docker_registry \
+        --node-name "{{ ansible_local['registry']['kompton']['system_node_name'] }}" \
+        --data-dir "{{ ansible_local['registry']['kompton']['docker_registry_path'] }}" \
+        --storage-filesystem-maxthreads "{{ ansible_local['registry']['kompton']['registry_fs_maxthreads'] }}"
+      args:
+        executable: /bin/bash
+        chdir: "{{ ansible_local['registry']['kompton']['platform_dir'] }}/manof"
+      when: registry_is_running.stdout == ""
+      
+    - name: Start nginx for Kubespray
+      shell: |
+        set -o pipefail
+        docker rm -f kubespray_nginx || true
+        docker run \
+        -d -p 18080:80 \
+        --restart always \
+        --name kubespray_nginx \
+        -v "{{ ansible_local['registry']['kompton']['kubespray_dir'] }}/outputs:/usr/share/nginx/html" \
+        iguazio/nginx_server:latest
+
+    - name: Start HAProxy service on data nodes
+      systemd:
+        name: haproxy
+        state: started
+      become: true
+      when: 
+        - ansible_local.haproxy.haproxy.enabled is defined
+        - ansible_local.haproxy.haproxy.enabled == "true"

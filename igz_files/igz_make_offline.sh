@@ -17,6 +17,11 @@ PATCH_DIR=${CURRENT_DIR}target-scripts/patches/${KUBESPRAY_VERSION}
 ./get-kubespray.sh
 ./pypi-mirror.sh
 
+echo "===> Fetching requirements.txt"
+ls -la $KUBESPRAY_DIR
+cp $KUBESPRAY_DIR/requirements.txt .
+ls -la .
+
 # We need to break the flow to set kube_version and apply the required patches
 
 if [[ ! -d "${PATCH_DIR}" ]]; then

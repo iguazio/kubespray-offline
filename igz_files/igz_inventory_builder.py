@@ -44,7 +44,9 @@ class SysConfigProcessor:
         self.canal_iface = ''
         self.system_id = ''
         self.domain = ''
-        self.data_vip = ''
+        self.data_vip = None
+        self.distro = ''
+        self.haproxy = ''
 
         with open(self.yaml_file, 'r') as file:
             self.config = yaml.safe_load(file)
@@ -139,6 +141,11 @@ class SysConfigProcessor:
         vip = self.config.get('spec', {}).get('data_cluster', {}).get('dashboard_vip', {})
         if vip:
             self.data_vip = vip
+        else:
+            self.data_vip = None
+
+    def get_haproxy(self):
+        return True if self.data_vip and self.haproxy else False
 
     def generate_inventory(self, template_file="./igz_inventory.ini.j2", output_file="igz_inventory.ini"):
         """
@@ -155,11 +162,13 @@ class SysConfigProcessor:
         data_nodes = self.data_nodes
         username = self.username
         password = self.password
+        distro = self.distro
 
         # Render the template with the new variable
         rendered_template = template.render(app_nodes=app_nodes, data_nodes=data_nodes,
                                             username=username,
-                                            password=password)
+                                            password=password,
+                                            distro=distro)
 
         SysConfigProcessor._write_template(output_file, rendered_template)
 
@@ -170,15 +179,14 @@ class SysConfigProcessor:
 
         Args:
            template_file (str): Path to the Jinja2 template file. Default is "igz_override.yml.j2".
-           output_file (str): Path to the output INI file. Default is "igz_override.yml".
+           output_file (str): Path to the output YAML file. Default is "igz_override.yml".
         """
         template = SysConfigProcessor._get_template_file(template_file)
 
         # Since kubespray images are pushed to 1st data node it is not correct to point the registry to VIP
         # until we push them (and other binaries) symmetrically
-        # igz_registry_host = self.data_nodes[0] if not self.data_vip else self.data_vip
-        igz_registry_host = self.data_nodes[0]
-        igz_registry_port = 8009
+        igz_registry_host = self.data_nodes[0] if not self.get_haproxy() else self.data_vip
+        igz_registry_port = 8009 if not self.get_haproxy() else 18009
         external_ips = [node['external_ip_address'] for node in self.nodes if node['external_ip_address']]
         if self.vip:
             external_ips.append(self.vip['ip_address'])
@@ -199,7 +207,7 @@ class SysConfigProcessor:
 
         Args:
            template_file (str): Path to the Jinja2 template file. Default is "igz_offline.yml.j2".
-           output_file (str): Path to the output INI file. Default is "igz_offline.yml".
+           output_file (str): Path to the output YAML file. Default is "igz_offline.yml".
         """
 
         # Define the specific section
@@ -251,6 +259,8 @@ def _parse_cli():
     parser.add_argument('system_config')
     parser.add_argument('user')
     parser.add_argument('password')
+    parser.add_argument('distro')
+    parser.add_argument('haproxy')
     return parser.parse_args()
 
 
@@ -262,9 +272,13 @@ def main_flow():
     system_config = args.system_config
     username = args.user
     password = args.password
+    distro = args.distro
+    haproxy = args.haproxy
     config_processor = SysConfigProcessor(system_config)
     config_processor.username = username
     config_processor.password = password
+    config_processor.distro = distro
+    config_processor.haproxy = True if haproxy == 'true' else False
 
     config_processor.generate_inventory()
     config_processor.generate_overrides()
