@@ -10,3 +10,4 @@ cache/
 .venv/
 venv/
 system_config.yaml
+.vscode/
