@@ -10,7 +10,8 @@ fi
 $docker run -u $(id -u):$(id -g) \
     -v "${PWD}":/work \
     -v ~/.ssh:/root/.ssh \
+    -v /etc/ssh:/etc/ssh \
     -v /etc/ansible/facts.d:/etc/ansible/facts.d \
     --name kubespray_ansible \
     --rm --entrypoint ansible-playbook \
-    kubespray-offline-ansible:latest -T 60 $*
+    kubespray-offline-ansible:latest $*
