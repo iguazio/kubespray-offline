@@ -93,17 +93,40 @@
         /usr/local/bin/nerdctl load -i {{ ansible_local.registry.kompton.temp_dir }}/bootstrap_apps.tar.gz
 
 - hosts: k8s_clients
+  # Yellow rubber duck: We need to kill all running containers except:
+  # - kubespray_ansible because we are running in it
+  # - upgrade_tool when we are in the middle of upgrade
+  # Special case is when we are scaling out k8s cluster:
+  # - then nothing should be killed except kubespray_nginx
+  # This special case is handled in "when" condition at "docker rm" task below
+  vars:
+    dont_kill:
+      - "upgrade_tool"
+      - "kubespray_ansible"
+
   tasks:
     - name: Get names of all running Docker containers
       shell: "{% raw %}docker ps --format '{{.Names}}'{% endraw %}"
-      register: docker_ps_output
+      register: running_containers
 
-    - name: Stop and remove Docker containers (but not upgrade_tool)
+    - name: Initialize temporary list with all containers
+      set_fact:
+        temp_list: "{{ running_containers.stdout_lines }}"
+
+    - name: Remove elements
+      set_fact:
+        temp_list: "{{ temp_list | reject('regex', item) | list }}"
+      loop: "{{ dont_kill }}"
+
+    - name: Set final containers to kill list
+      set_fact:
+        containers_to_kill: "{{ temp_list }}"
+
+    - name: Stop and remove Docker containers (as per Yellow Rubber Duck rule)
       shell: docker rm -f {{ item }}
       when:
-        - item not in ["upgrade_tool", "kubespray_ansible"]
-        - item == "kubespray_nginx" or not live_system
-      with_items: "{{ docker_ps_output.stdout_lines }}"
+        - not live_system or item == "kubespray_nginx"
+      with_items: "{{ containers_to_kill }}"
 
     - name: Stop and disable HAProxy service
       systemd:
@@ -112,6 +135,7 @@
         enabled: false
       become: true
 
+# TODO: The tsks below don't do anything and should be removed
     - name: Find .original repos in /etc/yum.repos.d
       find:
         paths: "/etc/yum.repos.d/"
@@ -131,4 +155,3 @@
         path: /root/.config/pip
         state: absent
       become: true
-
