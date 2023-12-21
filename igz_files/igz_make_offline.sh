@@ -5,6 +5,8 @@ set -e
 . config.sh
 
 CURRENT_DIR=$(pwd)
+rm -rf /outputs/*
+
 KUBESPRAY_DIR=./cache/kubespray-${KUBESPRAY_VERSION}
 
 # Current dir already has a slash at the end - don't fix the line below
@@ -70,8 +72,9 @@ find . -path './proc' -prune -o -type f -name "igz_*" -exec cp {} /outputs/ \;
 echo "KUBESPRAY_VERSION=\${KUBESPRAY_VERSION:-${KUBESPRAY_VERSION}}" >> /outputs/igz_config.sh
 
 # This does not fall under any category
-echo " ===> Fetch nVidia patch"
+echo " ===> Fetch helper patches"
 cp ./igz_patches/nvidia/config.toml.patch /outputs
+cp ./igz_patches/ansible_cfg/ansible.cfg.patch /outputs
 
 chown -R 1000:1000 /outputs
 

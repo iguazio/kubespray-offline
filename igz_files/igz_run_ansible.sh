@@ -7,6 +7,9 @@ if [ -z "$docker" ]; then
     fi
 fi
 
+# Make sure the container is not stuck from previous run
+docker rm -f kubespray_ansible 2>/dev/null || true
+
 $docker run -u $(id -u):$(id -g) \
     -v "${PWD}":/work \
     -v ~/.ssh:/root/.ssh \
@@ -15,3 +18,4 @@ $docker run -u $(id -u):$(id -g) \
     --name kubespray_ansible \
     --rm --entrypoint ansible-playbook \
     kubespray-offline-ansible:latest $*
+    
