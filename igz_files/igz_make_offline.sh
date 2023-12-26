@@ -5,11 +5,7 @@ set -e
 . config.sh
 
 CURRENT_DIR=$(pwd)
-
-rm -rf /outputs/*
-
 KUBESPRAY_DIR=./cache/kubespray-${KUBESPRAY_VERSION}
-
 # Current dir already has a slash at the end - don't fix the line below
 PATCH_DIR=${CURRENT_DIR}target-scripts/patches/${KUBESPRAY_VERSION}
 

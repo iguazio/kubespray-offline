@@ -31,6 +31,7 @@ common.main {
         timestamps {
 
             stage('checkout') {
+                deleteDir()
                 final scm_vars = checkout scm
 
                 env.kubespray_hash = scm_vars.GIT_COMMIT
