@@ -5,6 +5,7 @@ set -e
 . config.sh
 
 CURRENT_DIR=$(pwd)
+
 rm -rf /outputs/*
 
 KUBESPRAY_DIR=./cache/kubespray-${KUBESPRAY_VERSION}

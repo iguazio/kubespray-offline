@@ -3,7 +3,7 @@
 def buildContainer(distro, tag) {
     docker_file = "Dockerfile_${distro}"
     image_name = "devops/${distro}_kubespray_builder:${tag}"
-    common.shell(['docker', 'build', '-t', image_name, '-f', docker_file, '.'])
+    common.shell(['docker', 'build', '--no-cache', '-t', image_name, '-f', docker_file, '.'])
 } // Closes function definition
 
 def runContainer(distro, tag) {
