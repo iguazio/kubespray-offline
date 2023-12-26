@@ -46,8 +46,8 @@ common.main {
                             runContainer('rocky8', env.kubespray_hash)
                         }, // Closes build_rocky8 block
                         "build_centos7": {
-                            buildContainer('centos7', env.kubespray_hash)
-                            runContainer('centos7', env.kubespray_hash)
+                            // buildContainer('centos7', env.kubespray_hash)
+                            // runContainer('centos7', env.kubespray_hash)
                         } // Closes build_centos7 block
                     )
                 }
@@ -57,9 +57,9 @@ common.main {
                 dir('./') {
                     sh("ls -la")
                     sh("mv rocky8_outputs/rpms rocky8_outputs/rocky8_rpms")
-                    sh("mv centos7_outputs/rpms centos7_outputs/centos7_rpms")
+                    // sh("mv centos7_outputs/rpms centos7_outputs/centos7_rpms")
                     sh("mv rocky8_outputs outputs")
-                    sh("mv centos7_outputs/centos7_rpms outputs")
+                    // sh("mv centos7_outputs/centos7_rpms outputs")
                     sh("./igz_build_ansible.sh")
                 }
             }
