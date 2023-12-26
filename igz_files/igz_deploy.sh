@@ -22,8 +22,6 @@ else
     HAPROXY="false"
 fi
 
-
-
 ###### Flow starts here ##########################
 
 # Get the deploy options
@@ -48,6 +46,9 @@ if [ "$SCALE_OUT" == "yes" ]; then
  SKIP_INSTALL="no"
 fi
 
+# The files in kubespray dir are owned by root and we don't like it
+chown -R iguazio:iguazio .
+
 echo "==> Build Iguazio inventory"
 python3 ./igz_inventory_builder.py "${@: -4}" "$HAPROXY"
 
@@ -58,26 +59,23 @@ else
   echo -e "\n# Live system flag\nlive_system: false" >> igz_override.yml
 fi
 
-# TODO: Ugly piece of code
-echo "==> Copy Iguazio files"
+echo "==> Prepare inventory dir"
 pushd ./$KUBESPRAY_DIR_NAME
 cp -r inventory/sample inventory/igz
 # Copy and rename file in one line
 cat ../igz_offline.yml > inventory/igz/group_vars/all/offline.yml
-cp ../igz_override.yml .
 cp ../igz_inventory.ini ./inventory/igz
-cp ../igz_hosts.toml.j2 .
+
+echo "==> Copy Iguazio files"
+find ../ -maxdepth 1 -type f -name 'igz_*' -exec cp '{}' . ';'
+
+echo "==> COpy patches and suppress ansible warnings"
 cp ../config.toml.patch .
-cp ../igz_reset.yml .
-cp ../igz_pre_install.yml .
-cp ../igz_post_install.yml .
-cp ../igz_run_ansible.sh .
+cp ../ansible.cfg.patch .
+patch -r /dev/null  --forward --batch -p1 < ansible.cfg.patch || true
 
 # Copy playbook for offline repo
 cp -r ../playbook .
-
-# The files in kubespray dir are owned by root and we don't like it
-chown -R iguazio:iguazio .
 
 # Run igz_preinstall playbook
 ./igz_run_ansible.sh -i inventory/igz/igz_inventory.ini igz_pre_install.yml --become --extra-vars=@igz_override.yml
