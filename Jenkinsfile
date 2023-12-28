@@ -55,7 +55,7 @@ common.main {
 
             stage('Merge assets and build ansible container') {
                 dir('./') {
-                    sh("ls -la")
+                    sh("find -type f > filelist.dev")
                     sh("mv rocky8_outputs/rpms rocky8_outputs/rocky8_rpms")
                     sh("mv centos7_outputs/rpms centos7_outputs/centos7_rpms")
                     sh("mv rocky8_outputs outputs")
