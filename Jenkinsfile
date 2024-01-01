@@ -55,11 +55,15 @@ common.main {
 
             stage('Merge assets and build ansible container') {
                 dir('./') {
-                    sh("find -type f > filelist.dev")
+                    sh("find -type f")
                     sh("mv rocky8_outputs/rpms rocky8_outputs/rocky8_rpms")
+                    sh("find -type f")
                     sh("mv centos7_outputs/rpms centos7_outputs/centos7_rpms")
+                    sh("find -type f")
                     sh("mv rocky8_outputs outputs")
+                    sh("find -type f")
                     sh("mv centos7_outputs/centos7_rpms outputs")
+                    sh("find -type f")
                     sh("./igz_build_ansible.sh")
                 }
             }
