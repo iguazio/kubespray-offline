@@ -2,9 +2,9 @@
 
 # Exit on any error
 set -e
-# Override configs to avoid replacing the script multiple times
-cat ./igz_config.sh > ./config.sh && . ./config.sh
-pushd ./kubespray-$KUBESPRAY_VERSION && . ./venv/bin/activate && popd
+
+. ./config.sh
+. kubespray-$KUBESPRAY_VERSION/venv/bin/activate
 
 BASEDIR="."
 FILES_DIR=./files
@@ -69,10 +69,8 @@ cp ../igz_inventory.ini ./inventory/igz
 echo "==> Copy Iguazio files"
 find ../ -maxdepth 1 -type f -name 'igz_*' -exec cp '{}' . ';'
 
-echo "==> COpy patches and suppress ansible warnings"
+echo "==> Copy patches"
 cp ../config.toml.patch .
-cp ../ansible.cfg.patch .
-patch -r /dev/null  --forward --batch -p1 < ansible.cfg.patch || true
 
 # Copy playbook for offline repo
 cp -r ../playbook .
