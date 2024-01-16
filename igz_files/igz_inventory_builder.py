@@ -190,13 +190,17 @@ class SysConfigProcessor:
         external_ips = [node['external_ip_address'] for node in self.nodes if node['external_ip_address']]
         if self.vip:
             external_ips.append(self.vip['ip_address'])
+            api_endpoint = self.vip['ip_address'] + ':' + self.vip['port']
+        else:
+            api_endpoint = self.nodes[0]['client_ip']
         supplementary_addresses_in_ssl_keys = ','.join(external_ips)
         canal_iface = self.canal_iface
         system_fqdn = '.'.join([self.system_id, self.domain])
 
         rendered_template = template.render(igz_registry_host=igz_registry_host, igz_registry_port=igz_registry_port,
                                             supplementary_addresses_in_ssl_keys=supplementary_addresses_in_ssl_keys,
-                                            canal_iface=canal_iface, apiserver_vip=self.vip, system_fqdn=system_fqdn)
+                                            canal_iface=canal_iface, apiserver_vip=self.vip, system_fqdn=system_fqdn,
+                                            api_endpoint=api_endpoint)
 
         SysConfigProcessor._write_template(output_file, rendered_template)
 

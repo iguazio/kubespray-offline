@@ -40,8 +40,6 @@
       become: yes
       when: do is defined and do == 'backup'
 
-    - name: End of backup play
-      meta: end_play
 
 - name: Renew certificates
   hosts: all
@@ -85,6 +83,13 @@
       delegate_to: '{{ groups["kube_control_plane"][0] }}'
       run_once: yes
       when: do is defined and do == 'renew'
+
+    - name: Update server line in Kubernetes admin.conf
+      lineinfile:
+        path: /home/iguazio/.kube/config
+        backrefs: true
+        regexp: '^server:.*$'
+        line: 'server: https://{{ api_endpoint }}'
 
     - name: Distribute new kubeconfig
       copy:
