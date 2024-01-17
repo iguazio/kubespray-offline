@@ -2,6 +2,7 @@
 - name: Check certificates expiry
   hosts: kube_control_plane
   gather_facts: no
+  
   tasks:
     - name: Check certificates expiry
       ansible.builtin.shell: "/usr/local/bin/kubeadm certs check-expiration"
@@ -21,8 +22,6 @@
       run_once: true
       when: do is defined and do == 'check'
 
-    - name: End of check play
-      meta: end_play
 
 - name: Backup kubeconfig
   hosts: all
@@ -99,6 +98,3 @@
         group: iguazio
         mode: 0o400
       when: do is defined and do == 'renew'
-
-    - name: End of renew play
-      meta: end_play

@@ -190,9 +190,9 @@ class SysConfigProcessor:
         external_ips = [node['external_ip_address'] for node in self.nodes if node['external_ip_address']]
         if self.vip:
             external_ips.append(self.vip['ip_address'])
-            api_endpoint = self.vip['ip_address'] + ':' + self.vip['port']
+            api_endpoint = ':'.join([str(self.vip['ip_address']), str(self.vip['port'])])
         else:
-            api_endpoint = self.nodes[0]['client_ip']
+            api_endpoint = str(self.nodes[0]['client_ip'])
         supplementary_addresses_in_ssl_keys = ','.join(external_ips)
         canal_iface = self.canal_iface
         system_fqdn = '.'.join([self.system_id, self.domain])
