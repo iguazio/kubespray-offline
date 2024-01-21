@@ -1,0 +1,13 @@
+diff --git a/roles/kubespray-defaults/defaults/main/main.yml b/roles/kubespray-defaults/defaults/main/main.yml
+index dec7d19cc..275eb32a9 100644
+--- a/roles/kubespray-defaults/defaults/main/main.yml
++++ b/roles/kubespray-defaults/defaults/main/main.yml
+@@ -16,7 +16,7 @@ kubelet_fail_swap_on: true
+ kubelet_swap_behavior: LimitedSwap
+
+ ## Change this to use another Kubernetes version, e.g. a current beta release
+-kube_version: v1.28.6
++kube_version: v1.26.5
+
+ ## The minimum version working
+ kube_version_min_required: v1.26.0
