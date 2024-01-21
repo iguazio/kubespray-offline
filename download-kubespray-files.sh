@@ -114,29 +114,16 @@ done
 # download images
 #TODO: Don't modify Japanese code. Use patches somehow!!!
 
-random_port=$(( 5000 + RANDOM % 10 + 1 ))
-registry_name="kubespray-registry-$random_port"
-registry_url="localhost:$random_port"
-
+echo "Let's print where we are just in case"
 echo $PWD
-# Get the directory where the script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+ls -la
 
-# Create an absolute path
-ABS_IMAGES_DIR="$(realpath "$SCRIPT_DIR/$IMAGES_DIR")"
-
-echo $ABS_IMAGES_DIR
-
-docker run -d -u 1000:1000 -p $random_port:5000 -v $ABS_IMAGES_DIR:/var/lib/registry --name $registry_name registry:latest
-sleep 5s
-docker ps
 images=$(cat ${IMAGES_DIR}/images.list)
 registries=('registry.k8s.io' 'k8s.gcr.io' 'gcr.io' 'docker.io' 'quay.io')
-sleep 10m
 for image in $images; do
   for registry in "${registries[@]}"; do
     if [[ $image == $registry/* ]]; then
-        new_image="$registry_url/${image#$registry/}"
+        new_image="localhost:5000/${image#$registry/}"
         echo "Transformed image name: $new_image"
         break
     fi
@@ -144,7 +131,5 @@ for image in $images; do
   echo "Taking image $image"
   echo "And pushing it to $new_image"
   skopeo copy --insecure-policy --dest-no-creds --dest-tls-verify=false docker://$image docker://$new_image || exit 1
-#    get_image $i
 done
 
-docker rm -f $registry_name
