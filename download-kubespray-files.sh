@@ -128,10 +128,11 @@ ABS_IMAGES_DIR="$(realpath "$SCRIPT_DIR/$IMAGES_DIR")"
 echo $ABS_IMAGES_DIR
 
 docker run -d -u 1000:1000 -p $random_port:5000 -v $ABS_IMAGES_DIR:/var/lib/registry --name $registry_name registry:latest
-
+sleep 5s
+docker ps
 images=$(cat ${IMAGES_DIR}/images.list)
 registries=('registry.k8s.io' 'k8s.gcr.io' 'gcr.io' 'docker.io' 'quay.io')
-
+sleep 10m
 for image in $images; do
   for registry in "${registries[@]}"; do
     if [[ $image == $registry/* ]]; then
