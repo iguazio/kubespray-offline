@@ -13,11 +13,11 @@ def runContainer(distro, tag) {
     common.shell(['docker', 'rmi', '-f', image_name])
 } // Closes function definition
 
-def startRegistry($tag) {
+def startRegistry(tag) {
     sh "docker run -d -u 1000:1000 -v \$(pwd)/docker_registry:/var/lib/registry --name k8s_registry_$tag registry:latest"
 } // Closes function definition
 
-def stopRegistry($tag) {
+def stopRegistry(tag) {
   sh "docker rm -f k8s_registry_$tag"
 } // Closes function definition
 
