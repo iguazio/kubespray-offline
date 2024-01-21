@@ -118,8 +118,9 @@ echo "Let's print where we are just in case"
 echo $PWD
 ls -la
 
-images=$(cat ${IMAGES_DIR}/images.list)
+images=$(cat "${IMAGES_DIR}/images.list")
 registries=('registry.k8s.io' 'k8s.gcr.io' 'gcr.io' 'docker.io' 'quay.io')
+
 for image in $images; do
   for registry in "${registries[@]}"; do
     if [[ $image == $registry/* ]]; then
@@ -130,6 +131,20 @@ for image in $images; do
   done
   echo "Taking image $image"
   echo "And pushing it to $new_image"
-  skopeo copy --insecure-policy --dest-no-creds --dest-tls-verify=false docker://$image docker://$new_image || exit 1
+  if ! skopeo copy --insecure-policy --dest-no-creds --dest-tls-verify=false docker://$image docker://$new_image; then
+    echo "Skopeo copy failed, attempting Docker pull-tag-push..."
+    if ! docker pull $image; then
+      echo "Docker pull failed. Exiting..."
+      exit 1
+    fi
+    if ! docker tag $image $new_image; then
+      echo "Docker tag failed. Exiting..."
+      exit 1
+    fi
+    if ! docker push $new_image; then
+      echo "Docker push failed. Exiting..."
+      exit 1
+    fi
+  fi
 done
 
