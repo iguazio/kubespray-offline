@@ -14,6 +14,8 @@ def runContainer(distro, tag) {
 } // Closes function definition
 
 def startRegistry(tag) {
+    sh "mkdir -p \$(pwd)/docker_registry"
+    sh "sudo chown -R iguazio:iguazio \$(pwd)/docker_registry"
     sh "docker run --net=host -d -u 1000:1000 -v \$(pwd)/docker_registry:/var/lib/registry --name k8s_registry_${tag} registry:latest"
 } // Closes function definition
 
