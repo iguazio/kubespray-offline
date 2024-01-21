@@ -130,8 +130,6 @@ for image in $images; do
   done
   echo "Taking image $image"
   echo "And pushing it to $new_image"
-  echo "Sleeping... Do your things"
-  sleep 10m
   skopeo copy --insecure-policy --dest-no-creds --dest-tls-verify=false docker://$image docker://$new_image || exit 1
 done
 
