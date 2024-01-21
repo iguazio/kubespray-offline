@@ -125,14 +125,14 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 # Create an absolute path
 ABS_IMAGES_DIR="$(realpath "$SCRIPT_DIR/$IMAGES_DIR")"
 
-echo $ABSOLUTE_OUTPUT_DIR
+echo $ABS_IMAGES_DIR
 
 docker run -d -u 1000:1000 -p $random_port:5000 -v $ABS_IMAGES_DIR:/var/lib/registry --name $registry_name registry:latest
 
 images=$(cat ${IMAGES_DIR}/images.list)
 registries=('registry.k8s.io' 'k8s.gcr.io' 'gcr.io' 'docker.io' 'quay.io')
 
-for i in $images; do
+for image in $images; do
   for registry in "${registries[@]}"; do
     if [[ $image == $registry/* ]]; then
         new_image="$registry_url/${image#$registry/}"
@@ -140,7 +140,9 @@ for i in $images; do
         break
     fi
   done
-  skopeo copy --insecure-policy --dest-no-creds --dest-tls-verify=false docker://$image docker://$new_image
+  echo "Taking image $image"
+  echo "And pushing it to $new_image"
+  skopeo copy --insecure-policy --dest-no-creds --dest-tls-verify=false docker://$image docker://$new_image || exit 1
 #    get_image $i
 done
 
