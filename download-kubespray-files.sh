@@ -112,7 +112,28 @@ for i in $files; do
 done
 
 # download images
+#TODO: Don't modify Japanese code. Use patches somehow!!!
+
+random_port=$(( 5000 + RANDOM % 10 + 1 ))
+registry_name="kubespray-registry-$random_port"
+registry_url="localhost:$random_port"
+
+echo $PWD
+docker run -d -u 1000:1000 -p $random_port:5000 -v $IMAGES_DIR:/var/lib/registry --name $registry_name registry:latest
+
 images=$(cat ${IMAGES_DIR}/images.list)
+registries=('registry.k8s.io' 'k8s.gcr.io' 'gcr.io' 'docker.io' 'quay.io')
+
 for i in $images; do
-    get_image $i
+  for registry in "${registries[@]}"; do
+    if [[ $image == $registry/* ]]; then
+        new_image="$registry_url/${image#$registry/}"
+        echo "Transformed image name: $new_image"
+        break
+    fi
+  done
+  skope copy --insecure-policy --dest-no-creds --dest-tls-verify=false docker://$image docker://$new_image
+#    get_image $i
 done
+
+docker rm -f $registry_name
