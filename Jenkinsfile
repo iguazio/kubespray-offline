@@ -56,18 +56,24 @@ common.main {
             } // closes stage
 
             stage('build') {
-                dir('./') {
-                    parallel (
-                        "build_rocky8": {
-                            buildContainer('rocky8', env.kubespray_hash)
-                            runContainer('rocky8', env.kubespray_hash)
-                        }, // Closes build_rocky8 block
-                        "build_centos7": {
-                            buildContainer('centos7', env.kubespray_hash)
-                            runContainer('centos7', env.kubespray_hash)
-                        } // Closes build_centos7 block
-                    ) // closes parallel list
-                } // closes dir
+                try {
+                    dir('./') {
+                        parallel(
+                            "build_rocky8": {
+                                buildContainer('rocky8', env.kubespray_hash)
+                                runContainer('rocky8', env.kubespray_hash)
+                            },
+                            "build_centos7": {
+                                buildContainer('centos7', env.kubespray_hash)
+                                runContainer('centos7', env.kubespray_hash)
+                            }
+                        ) // closes parallel list
+                    } // closes dir
+                } catch (Exception e) {
+                    println "An error occurred: ${e.getMessage()}"
+                    stopRegistry(env.kubespray_hash)
+                    throw e // Rethrow the exception to mark the build as failed
+                }
             } // closes stage
 
             stage('merge assets and build ansible container') {
