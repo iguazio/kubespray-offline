@@ -1,26 +1,28 @@
 - name: Prepare containers
-  hosts: k8s_clients
+  hosts: localhost
+  connection: local
   tasks:
-    - name: Check if datanode registry is running
-      ansible.builtin.shell: docker ps --quiet --filter name=kompton_registry
+    - name: Check if 'registry' container is running
+      shell: "{% raw %}docker ps --filter 'name=registry' --filter 'status=running' --format '{{.Names}}'{% endraw %}"
       register: registry_is_running
       changed_when: false
-      tags:
-        - skip_ansible_lint
 
-    - name: Bring up Kompton registry
+    - name: Bring up datanode registry
       ansible.builtin.shell: >
-        docker run -d --restart always --name kompton_registry
-        -v {{ ansible_local['registry']['kompton']['docker_registry_path'] }}:/var/lib/registry
-        -p {{ ansible_local['registry']['kompton']['kompton_registry_port'] }}:5000
-        {{ ansible_local['registry']['kompton']['docker_registry_image'] }}
+        docker run -d --restart always --name datanode_registry
+        -v /mnt/docker_registry:/var/lib/registry
+        -p 8009:5000
+        iguazio/registry:latest
       args:
         executable: /bin/bash
       environment:
         REGISTRY_STORAGE_FILESYSTEM_MAXTHREADS: "{{ ansible_local['registry']['kompton']['registry_fs_maxthreads'] }}"
       when: registry_is_running.stdout == ""
-      tags:
-        - skip_ansible_lint
+
+    - name: Set outputs dir
+      set_fact:
+        outputs_dir: "{{ (playbook_dir + '/../') | realpath }}"
+        kompton_dir: "{{ (playbook_dir + '/../../../deploy') | realpath }}"
 
     - name: Start nginx for Kubespray
       ansible.builtin.shell: |
@@ -30,16 +32,34 @@
         -d -p 18080:80 \
         --restart always \
         --name kubespray_nginx \
-        -v "{{ ansible_local['registry']['kompton']['kubespray_dir'] }}/outputs:/usr/share/nginx/html" \
+        -v "{{ outputs_dir }}:/usr/share/nginx/html" \
         iguazio/nginx_server:latest
-      tags:
-        - skip_ansible_lint
 
-    - name: Start HAProxy service on data nodes
-      ansible.builtin.systemd:
-        name: haproxy
-        state: started
+    - name: Force skopeo bin
+      unarchive:
+        src: "{{ outputs_dir }}/files/skopeo-1.14.0.tar.gz"
+        dest: /usr/local/bin
+        remote_src: yes
+        owner: root
+        group: root
+        mode: 0o755
       become: true
-      when:
-        - ansible_local.haproxy.haproxy.enabled is defined
-        - ansible_local.haproxy.haproxy.enabled == "true"
+
+    - name: Find all tar.gz files in the directory
+      find:
+        paths:
+          - "{{ outputs_dir }}/images"
+        patterns:
+          - "*.tar.gz"
+          - "*.tar"
+      register: tarballs
+
+    - name: Push k8s images to datanode registry
+      shell: |
+        python3 /usr/local/bin/igz_push.py \
+        -sl "{{ tarballs.files | map(attribute='path') | list }}" \
+        -hf "{{ kompton_dir }}/inventory/group_vars/all/020_packaging.yml" \
+        -dr localhost:8009
+      args:
+        executable: /bin/bash
+      become: true
