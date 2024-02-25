@@ -36,6 +36,7 @@
         dest: "/home/{{ ansible_user }}/.kube/config"
         owner: "{{ ansible_user }}"
         mode: "0o400"
+      become: true
 
     - name: Copy kubectl binary to client
       ansible.builtin.copy:
@@ -165,9 +166,22 @@
       tags:
         - skip_ansible_lint
 
-    - name: Stop and disable HAProxy service
-      ansible.builtin.systemd:
-        name: haproxy
-        state: stopped
-        enabled: false
+    # All this is because {{ inventory_dir }} is resolved inside a container
+    - name: Read local fact
+      set_fact:
+        kubespray_dir: "{{ ansible_local.registry.kompton.kubespray_dir }}/outputs"
+
+    - name: Find all directories matching 'kubespray-*' under the kubespray directory
+      ansible.builtin.find:
+        paths: "{{ kubespray_dir }}/"
+        file_type: directory
+        patterns: 'kubespray-*'
+      register: found_dirs
+
+    - name: Set the first found directory as a fact
+      set_fact:
+        host_inventory_dir: "{{ found_dirs.files | map(attribute='path') | list | first }}/inventory"
+
+    - name: Fix ownership
+      shell: chown -R iguazio:iguazio {{ host_inventory_dir }}
       become: true
