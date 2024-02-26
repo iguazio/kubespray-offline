@@ -194,7 +194,7 @@ class SysConfigProcessor:
                                             igz_registry_host=igz_registry_host,
                                             igz_registry_port=igz_registry_port,
                                             kubespray_nginx_port=kubespray_nginx_port,
-                                            distro=distro, api_endpoint=api_endpoint)
+                                            api_endpoint=api_endpoint)
 
         SysConfigProcessor._write_template(output_file, rendered_template)
 
