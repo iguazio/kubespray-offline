@@ -19,6 +19,7 @@
         -p 8009:5000
         -v {{ ansible_local['registry']['kompton']['docker_registry_path'] }}:/var/lib/registry
         {{ ansible_local['registry']['kompton']['docker_registry_image'] }}
+      ignore_errors: true
       args:
         executable: /bin/bash
       environment:
